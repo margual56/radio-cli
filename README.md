@@ -1,6 +1,8 @@
 # radio-cli
 A simple radio CLI written in bash
 
+[![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3&t=6)
+
 ## How it works...
 ...is very simple. The idea is to have a compilation of radio stations in [the config file](https://github.com/margual56/radio-cli/blob/main/config.json) and have a tool to be able to easily select one or the other.
 
