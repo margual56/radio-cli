@@ -1,0 +1,13 @@
+[package]
+name = "radio-cli"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+structopt = "0.3.26"
+serde = {version="^1.0", features = ["derive"]}
+serde_json = { version = "^1.0", default-features = false, features = ["alloc"] }
+
+# https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
+xdg = "2.4.1"

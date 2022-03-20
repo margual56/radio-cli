@@ -1,0 +1,12 @@
+{
+	"data": [
+		{
+			"station": "los40",
+			"url": "https://20043.live.streamtheworld.com/LOS40AAC.aac"
+		},
+		{
+			"station": "europafm",
+			"url": "https://livefastly-webs.europafm.com/europafm/audio/chunklist.m3u8"
+		}
+	]
+}
