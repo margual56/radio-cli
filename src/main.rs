@@ -1,71 +1,130 @@
-extern crate xdg;
-use structopt::StructOpt;
 use std::process::Command;
+use radio_libs::{Config};
+pub use structopt::StructOpt;
+use colored::*;
 
-use serde::{Deserialize};
-use std::fs::File;
-use std::io::Read;
+
+pub fn perror(msg: &str) {
+	println!("{} {}", "Error:".red().bold(), msg);
+}
+
+pub fn help() {
+	println!(
+r#"
+{}
+	Usage: radio [OPTIONS]
+
+{}
+	-u --url <URL>: Specifies an url to be played.
+	-s --station <station name>: Specifies the name of the station to be played
+	-v --verbose: Show extra information
+	-h --help: Show this help and exit
+
+{}
+	The config file should be located in "$XDG_CONFIG_HOME/radio-cli/config.json". 
+	If the file does not exist, the program will error out.
+	Inside this config file you can find all the stations and their URLs, feel free to add the ones you listen to,
+	and it would be awesome if you added them to the main config file too! (https://github.com/margual56/radio-cli/blob/main/config.json)
+"#, 
+	"An interactive radio player that uses mpv".bold(),
+	"OPTIONS: Used to play somethig directly".bold(),
+	"CONFIG: How to add new stations, edit and such".bold()
+	);
+}
 
 
-/// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt, Debug)]
-struct Cli {
+pub struct Cli {
+	/// Option: -u <URL>: Specifies an url to be played.
+    #[structopt(short, long)]
     url: Option<String>,
     
-    #[structopt(short, long)]
-    station: Option<String>
-}
+	/// Option: -s <station name>: Specifies the name of the station to be played
+    #[structopt(short, long, conflicts_with="url")]
+    station: Option<String>,
+	
+	/// Show extra info
+	#[structopt(short, long)]
+	verbose: bool,
 
-#[derive(Deserialize, Debug)]
-struct Station {
-    station: String,
-    url: String
-}
-
-#[derive(Deserialize, Debug)]
-struct Data {
-    data: Vec<Station>
+	/// Show the help and exit
+	#[structopt(short, long)]
+	help: bool,
+	
 }
 
 fn main() {
     // Parse the arguments
     let args = Cli::from_args();
 
-    // Load config.json from $XDG_CONFIG_HOME/radio-cli
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-    let mut config_file = File::open(xdg_dirs.get_config_file("config.json")).expect("Couldn't open config");
+	// Just print the help and exit
+	if args.help {
+		help();
+		std::process::exit(0);
+	}
 
-    // Read and parse the config into the `cfg` variable
-    let mut config: String = String::new();
-    config_file.read_to_string(&mut config).expect("Couldn't read config");
-    let cfg: Vec<Station> = (serde_json::from_str::<Data>(&config).expect("Couldn't parse config")).data;
+	// Parse the config file
+	let config: Config = match Config::load() {
+		Err(_error) => {
+			perror("The config file could not be opened!");
+			std::process::exit(1);
+		},
 
+		Ok(c) => c,
+	};
 
-    let mut station_given: bool;
-    let mut station_name: String = String::new();
+	let mut url: String = "".to_string();
+	let url_given: bool;
 
-    match args.station {
-        None => {station_given = false;}
-        Some(x) => {
-            station_given = true;
-            station_name = x;
-        }
-    }
+	match args.url {
+		None => {url_given = false;},
+		Some(u) => {
+			url_given = true;
+			url = u;
+		}
+	}
 
-    if station_given {
-        let mut url: String = String::new();
-        let mut found: bool = false;
+	if !url_given{ 
+		let station_given: bool;
+		let mut station_name: String = String::new();
 
-        for s in cfg.iter() {
-            if s.station.eq(&station_name) {
-                url = s.url.clone();
-                found = true;
-                break;
-            }
-        };
+		match args.station {
+			None => {station_given = false;}
+			Some(x) => {
+				station_given = true;
+				station_name = x;
+			}
+		}
 
-        if found {
-            Command::new("mpv").arg(url).output().expect("Failed to run mpv");
-        }
-    }
+		if !station_given {
+			let options = config.clone().get_all_stations();
+			station_name = match config.clone().prompt(options) {
+				Ok(s) => s,
+				Err(_error) => {
+					perror("Could not parse your choice");
+					std::process::exit(1);
+				}
+			};
+		}
+
+		url = match config.get_url_for(&station_name) {
+			Ok(u) => u,
+			Err(()) => {
+				perror("This station is not configured :(");
+				std::process::exit(1);
+			}
+		};
+
+		println!("Playing {}", station_name.green());
+	}else{
+		println!("Playing url '{}'", url.blue());
+	}
+	
+
+	if args.verbose {
+		let mut process = Command::new("mpv").arg(url).spawn().expect("failed to execute mpv");
+		let _ecode = process.wait().expect("Failed to wait on mpv to finish");
+	}else{
+		let _process = Command::new("mpv").arg(url).output().expect("failed to execute mpv");
+	}
 }
