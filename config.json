@@ -7,6 +7,22 @@
 		{
 			"station": "Europa FM",
 			"url": "https://livefastly-webs.europafm.com/europafm/audio/chunklist.m3u8"
+		},
+		{
+			"station": "Cadena 100",
+			"url": "https://cadena100bcn-cope.flumotion.com/playlist.m3u8"
+		},
+		{
+			"station": "Kiss FM",
+			"url": "https://kissfm.kissfmradio.cires21.com/kissfm.mp3"
+		},
+		{
+			"station": "Cadena SER",
+			"url": "https://22333.live.streamtheworld.com/CADENASERAAC_SC?dist=onlineradiobox"
+		},
+		{
+			"station": "Rock FM",
+			"url": "https://rockfm-cope.flumotion.com/chunks.m3u8"
 		}
 	]
 }
