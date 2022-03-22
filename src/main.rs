@@ -137,6 +137,6 @@ fn main() {
 		let mut process = mpv.args(mpv_args).spawn().expect("failed to execute mpv");
 		let _ecode = process.wait().expect("Failed to wait on mpv to finish");
 	}else{
-		let _process = Command::new("mpv").args(mpv_args).output().expect("failed to execute mpv");
+		let _process = mpv.args(mpv_args).output().expect("failed to execute mpv");
 	}
 }
