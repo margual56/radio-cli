@@ -17,6 +17,7 @@ r#"
 {}
 	-u --url <URL>: Specifies an url to be played.
 	-s --station <station name>: Specifies the name of the station to be played
+	--no--video: A flag passed down to mpv, in case you want to listen to the audio of a youtube music video or something
 	-v --verbose: Show extra information
 	-h --help: Show this help and exit
 
@@ -43,6 +44,9 @@ pub struct Cli {
     #[structopt(short, long, conflicts_with="url")]
     station: Option<String>,
 	
+    #[structopt(long="no-video")]
+	no_video: bool,
+
 	/// Show extra info
 	#[structopt(short, long)]
 	verbose: bool,
@@ -120,11 +124,19 @@ fn main() {
 		println!("Playing url '{}'", url.blue());
 	}
 	
+	let mut mpv = Command::new("mpv");
+	let mpv_args;
+
+	if args.no_video {
+		mpv_args = [url, "--no-video".to_string()];
+	} else {
+		mpv_args = [url, "".to_string()];
+	}
 
 	if args.verbose {
-		let mut process = Command::new("mpv").arg(url).spawn().expect("failed to execute mpv");
+		let mut process = mpv.args(mpv_args).spawn().expect("failed to execute mpv");
 		let _ecode = process.wait().expect("Failed to wait on mpv to finish");
 	}else{
-		let _process = Command::new("mpv").arg(url).output().expect("failed to execute mpv");
+		let _process = Command::new("mpv").args(mpv_args).output().expect("failed to execute mpv");
 	}
 }
