@@ -1,7 +1,23 @@
 # radio-cli
-A simple radio CLI written in bash
+A simple radio CLI written in rust
 
 [![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
+
+## Installation
+- On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-git) called **radio-cli-git**. If you have an AUR helper:
+```bash
+$ yay -S radio-cli-git
+```
+
+- On other systems you will have to install it manually, without automatic update capabilities:
+```bash
+git clone https://github.com/margual56/radio-cli.git radio-cli
+cd radio-cli
+cargo build --release
+sudo cp "./target/release/radio-cli" "/usr/bin/radio"
+mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
+cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
+```
 
 ## How it works...
 ...is very simple. The idea is to have a compilation of radio stations in [the config file](https://github.com/margual56/radio-cli/blob/main/config.json) and have a tool to be able to easily select one or the other.
@@ -27,4 +43,8 @@ Don't be surprised if these are not implemented in the end hehe (if there is no 
 - [ ] Loop to selection list when pressing `q` while playing
 - [ ] Some kind of online updating of the list of stations
 - [ ] Code optimizations/beautification
-- [ ] An AUR installer
+- Languages:
+  - [x] English
+  - [ ] Spanish
+  - [ ] Others(?)
+- [x] An AUR installer
