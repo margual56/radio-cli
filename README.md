@@ -42,10 +42,10 @@ Don't be surprised if these are not implemented in the end hehe (if there is no 
 
 - [ ] Audio (mpv) controls when not in verbose mode
 - [ ] Loop to selection list when pressing `q` while playing
-- [ ] Some kind of online updating of the list of stations
+- [x] ~Some kind of online updating of the list of stations~ _(kind of)_
 - [ ] Code optimizations/beautification
 - Languages:
-  - [x] English
+  - [x] ~English~
   - [ ] Spanish
   - [ ] Others(?)
-- [x] An AUR installer
+- [x] ~An AUR installer~

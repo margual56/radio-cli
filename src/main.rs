@@ -1,12 +1,7 @@
 use std::process::Command;
-use radio_libs::{Config};
+use radio_libs::{Config, perror};
 pub use structopt::StructOpt;
 use colored::*;
-
-
-pub fn perror(msg: &str) {
-	println!("{} {}", "Error:".red().bold(), msg);
-}
 
 pub fn help() {
 	println!(
@@ -22,14 +17,23 @@ r#"
 	-h --help: Show this help and exit
 
 {}
+	The config file is personal and you should modify it with your own preferred stations.
+	However, if you'd like to easily update from the one on GitHub, it is as easy as deleting the config.json file (see next section).
+	The next time you launch the program, it will automatically download the file again.
+	
+	Feel free to add new stations to the GitHub config file!
+
+{}
 	The config file should be located in "$XDG_CONFIG_HOME/radio-cli/config.json". 
-	If the file does not exist, the program will error out.
+	If the file does not exist (e.g.: first time you run it), the program will {} of the repository.
 	Inside this config file you can find all the stations and their URLs, feel free to add the ones you listen to,
 	and it would be awesome if you added them to the main config file too! (https://github.com/margual56/radio-cli/blob/main/config.json)
 "#, 
 	"An interactive radio player that uses mpv".bold(),
 	"OPTIONS: Used to play somethig directly".bold(),
-	"CONFIG: How to add new stations, edit and such".bold()
+	"UPDATE: Update the config file".bold(),
+	"CONFIG: How to add new stations, edit and such".bold(),
+	"automatically download the one from the main branch".bold()
 	);
 }
 
@@ -68,15 +72,7 @@ fn main() {
 	}
 
 	// Parse the config file
-	let config: Config = match Config::load() {
-		Err(_error) => {
-			perror("The config file could not be opened!");
-			std::process::exit(1);
-		},
-
-		Ok(c) => c,
-	};
-
+	let config: Config = Config::load();
 	let mut url: String = "".to_string();
 	let url_given: bool;
 
