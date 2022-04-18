@@ -1,3 +1,6 @@
+![GitHub](https://img.shields.io/github/license/margual56/radio-cli?style=flat-square)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/margual56/radio-cli/Rust/main?style=flat-square)
+
 # radio-cli
 A simple radio CLI written in rust
 

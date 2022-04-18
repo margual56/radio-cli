@@ -8,6 +8,9 @@ homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
 license = "GPL2"
 
+depends = ["mpv"]
+optdepends = ["youtube-dl"]
+
 [dependencies]
 structopt = "0.3.26"
 serde = {version="^1.0", features = ["derive"]}
