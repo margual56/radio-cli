@@ -1,12 +1,7 @@
 use std::process::Command;
-use radio_libs::{Config};
+use radio_libs::{Config, perror};
 pub use structopt::StructOpt;
 use colored::*;
-
-
-pub fn perror(msg: &str) {
-	println!("{} {}", "Error:".red().bold(), msg);
-}
 
 pub fn help() {
 	println!(
@@ -68,15 +63,7 @@ fn main() {
 	}
 
 	// Parse the config file
-	let config: Config = match Config::load() {
-		Err(_error) => {
-			perror("The config file could not be opened!");
-			std::process::exit(1);
-		},
-
-		Ok(c) => c,
-	};
-
+	let config: Config = Config::load();
 	let mut url: String = "".to_string();
 	let url_given: bool;
 
