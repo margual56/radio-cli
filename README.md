@@ -4,10 +4,11 @@ A simple radio CLI written in rust
 [![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
 
 ## Installation
-- On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-git) called **radio-cli-git**. If you have an AUR helper:
+- On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-bin) called **radio-cli-bin**. If you have an AUR helper:
 ```bash
-$ yay -S radio-cli-git
+$ yay -S radio-cli-bin
 ```
+_Note: radio-cli-git is now unsupported_
 
 - On other systems you will have to install it manually, without automatic update capabilities:
 ```bash
