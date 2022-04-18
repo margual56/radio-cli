@@ -36,33 +36,39 @@ impl Config {
 	}
 
 	fn load_config(dir: xdg::BaseDirectories) -> std::fs::File {
-		// Check if file exists 
-		// If it exists, return it
-		// Otherwise, try to download it
-		// It it cant, raise an error with an URL to the config file
 		match dir.find_config_file("config.json") {
 			None => {
-				let msg = format!("The config file does not exist in \"{:?}\"", dir.get_config_dirs()[0].to_str());
+				// Get the name of the directory
+				let tmp = dir.get_config_file("");
+				let dir_name: &str = match tmp.to_str() {
+					Some(x) => x,
+					None => "??"
+				};
+
+				// Print an error message
+				let msg = format!("The config file does not exist in \"{}\"", dir_name);
 				perror(msg.as_str());
 
-				println!("\tDownloading file from {}...", CONFIG_URL.italic());
+				// Download the file
+				println!("\tLoading file from {}...", CONFIG_URL.italic());
 				let resp = reqwest::blocking::get(CONFIG_URL).expect("Request failed");
 				let body = resp.text().expect("Body invalid");
 
+				// Create the new config file
 				let file_ref = dir.place_config_file("config.json").expect("Could not create config file");
 
-				println!("\tDone downloading!");
+				println!("\tDone loading!");
 
-				println!("\tTrying to open {}", file_ref.to_str().expect("msg: &str").bold());
+				println!("\tTrying to open {} to write the config...", file_ref.to_str().expect("msg: &str").bold());
 
-				let mut file = File::create(file_ref.clone()).unwrap();
+				let mut file = File::create(file_ref.clone()).unwrap();	// This is write-only!!
 				file.write_all(body.as_bytes()).expect("Could not write to config");
 
-				drop(file);
+				drop(file); // So we close the file to be able to read it
 
 				println!("\tFinished writing config. Enjoy! :)\n\n");
 
-				File::open(file_ref).unwrap()
+				File::open(file_ref).unwrap()  // This is read-only
 			},
 			Some(x) => File::open(x).expect("Could not open config")
 		}
