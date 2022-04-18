@@ -9,10 +9,6 @@
 			"url": "https://livefastly-webs.europafm.com/europafm/audio/chunklist.m3u8"
 		},
 		{
-			"station": "Cadena 100",
-			"url": "https://cadena100bcn-cope.flumotion.com/playlist.m3u8"
-		},
-		{
 			"station": "Kiss FM",
 			"url": "https://kissfm.kissfmradio.cires21.com/kissfm.mp3"
 		},
@@ -23,6 +19,10 @@
 		{
 			"station": "Rock FM",
 			"url": "https://rockfm-cope.flumotion.com/chunks.m3u8"
+		},
+		{
+			"station": "lofi",
+			"url": "https://www.youtube.com/watch?v=5qap5aO4i9A"
 		}
 	]
 }
