@@ -1,4 +1,5 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::io::{Write};
 use radio_libs::{Config, perror};
 pub use structopt::StructOpt;
 use colored::*;
@@ -121,18 +122,35 @@ fn main() {
 	}
 	
 	let mut mpv = Command::new("mpv");
-	let mpv_args;
+	let mut mpv_args: Vec<String> = [url].to_vec();
 
 	if args.no_video {
-		mpv_args = [url, "--no-video".to_string()];
-	} else {
-		mpv_args = [url, "".to_string()];
+		mpv_args.push(String::from("--no-video"));
+	}
+	
+	if !args.verbose {
+		mpv_args.push(String::from("--really-quiet"));
 	}
 
-	if args.verbose {
-		let mut process = mpv.args(mpv_args).spawn().expect("failed to execute mpv");
-		let _ecode = process.wait().expect("Failed to wait on mpv to finish");
-	}else{
-		let _process = mpv.args(mpv_args).output().expect("failed to execute mpv");
+	let output = mpv
+					.args(mpv_args)
+					.stdin(Stdio::inherit())
+					.stdout(Stdio::inherit())
+					.output()
+					.expect("Failed to execute command");
+	
+	std::io::stdout().write_all(&output.stdout).unwrap();
+	std::io::stderr().write_all(&output.stderr).unwrap();
+
+	if !output.status.success() {
+		perror(format!("mpv {}", output.status).as_str());
+
+		if !args.verbose {
+			println!("{}: {}", 
+				"Hint".italic().bold(), 
+				"Try running radio-cli with the verbose flag (-v or --verbose)".italic());
+		}
+
+		std::process::exit(2);
 	}
 }
