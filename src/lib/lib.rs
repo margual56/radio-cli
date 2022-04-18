@@ -30,7 +30,6 @@ impl Config {
 		let mut config: String = String::new();
 		config_file.read_to_string(&mut config).expect("Couldn't read config");
 
-
 		Ok(Config {
 			data: serde_json::from_str::<Config>(&config).expect("Couldn't parse config").data,
 		})

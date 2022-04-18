@@ -17,7 +17,7 @@ r#"
 {}
 	-u --url <URL>: Specifies an url to be played.
 	-s --station <station name>: Specifies the name of the station to be played
-	--no--video: A flag passed down to mpv, in case you want to listen to the audio of a youtube music video or something
+	--no-video: A flag passed down to mpv, in case you want to listen to the audio of a youtube music video or something
 	-v --verbose: Show extra information
 	-h --help: Show this help and exit
 
