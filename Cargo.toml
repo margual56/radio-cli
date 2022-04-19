@@ -8,6 +8,7 @@ homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
 license = "GPL2"
 
+[package.metadata]
 depends = ["mpv"]
 optdepends = ["youtube-dl"]
 

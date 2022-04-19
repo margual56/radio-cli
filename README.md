@@ -6,9 +6,13 @@ A simple radio CLI written in rust
 
 [![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
 
-## Warning! (optional dependency)
+### Warning! (optional dependency)
 To play youtube music you need to have `youtube-dl` installed! 
 
+## Usage
+To use it, just type `radio-cli` after installing it and the program will guide you.
+
+When playing music, __you can use the mpv keybindings__ to control it (spacebar to play/pause, etc).
 
 ## Installation
 - On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-bin) called **radio-cli-bin**. If you have an AUR helper:
