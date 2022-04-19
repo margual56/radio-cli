@@ -1,5 +1,6 @@
-use std::process::Command;
-use radio_libs::{Config, perror};
+use std::process::{Command, Stdio};
+use std::io::{Write};
+use radio_libs::{Config, Station, perror};
 pub use structopt::StructOpt;
 use colored::*;
 
@@ -73,66 +74,84 @@ fn main() {
 
 	// Parse the config file
 	let config: Config = Config::load();
-	let mut url: String = "".to_string();
-	let url_given: bool;
 
-	match args.url {
-		None => {url_given = false;},
-		Some(u) => {
-			url_given = true;
-			url = u;
-		}
-	}
+	let station = match args.url {
+		None => {
+			let station_name = match args.station {
+				// If the station name is passed as an argument:
+				Some(x) => x,
 
-	if !url_given{ 
-		let station_given: bool;
-		let mut station_name: String = String::new();
+				// Otherwise
+				None => {
+					// Get all the stations
+					let options = config.clone().get_all_stations();
 
-		match args.station {
-			None => {station_given = false;}
-			Some(x) => {
-				station_given = true;
-				station_name = x;
-			}
-		}
+					// And let the user choose one
+					match config.clone().prompt(options) {
+						Ok(s) => s,
+						Err(_error) => {
+							perror("Choice not valid");
+							std::process::exit(1);
+						}
+					}
+				}
+			};
 
-		if !station_given {
-			let options = config.clone().get_all_stations();
-			station_name = match config.clone().prompt(options) {
-				Ok(s) => s,
-				Err(_error) => {
-					perror("Could not parse your choice");
+			let url = match config.get_url_for(&station_name) {
+				Ok(u) => u,
+				Err(()) => {
+					perror("This station is not configured :(");
 					std::process::exit(1);
 				}
 			};
-		}
 
-		url = match config.get_url_for(&station_name) {
-			Ok(u) => u,
-			Err(()) => {
-				perror("This station is not configured :(");
-				std::process::exit(1);
+			println!("Playing {}", station_name.green());
+
+			Station {
+				station: station_name,
+				url: url
 			}
-		};
-
-		println!("Playing {}", station_name.green());
-	}else{
-		println!("Playing url '{}'", url.blue());
-	}
+		},
+		Some(x) => {
+			println!("Playing url '{}'", x.blue());
+			
+			Station {
+				station: String::from("URL"),
+				url: x
+			}
+		}
+	};
 	
 	let mut mpv = Command::new("mpv");
-	let mpv_args;
+	let mut mpv_args: Vec<String> = [station.url].to_vec();
 
 	if args.no_video {
-		mpv_args = [url, "--no-video".to_string()];
-	} else {
-		mpv_args = [url, "".to_string()];
+		mpv_args.push(String::from("--no-video"));
+	}
+	
+	if !args.verbose {
+		mpv_args.push(String::from("--really-quiet"));
 	}
 
-	if args.verbose {
-		let mut process = mpv.args(mpv_args).spawn().expect("failed to execute mpv");
-		let _ecode = process.wait().expect("Failed to wait on mpv to finish");
-	}else{
-		let _process = mpv.args(mpv_args).output().expect("failed to execute mpv");
+	let output = mpv
+					.args(mpv_args)
+					.stdin(Stdio::inherit())
+					.stdout(Stdio::inherit())
+					.output()
+					.expect("Failed to execute command");
+	
+	std::io::stdout().write_all(&output.stdout).unwrap();
+	std::io::stderr().write_all(&output.stderr).unwrap();
+
+	if !output.status.success() {
+		perror(format!("mpv {}", output.status).as_str());
+
+		if !args.verbose {
+			println!("{}: {}", 
+				"Hint".italic().bold(), 
+				"Try running radio-cli with the verbose flag (-v or --verbose)".italic());
+		}
+
+		std::process::exit(2);
 	}
 }
