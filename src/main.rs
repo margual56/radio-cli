@@ -1,7 +1,8 @@
 use std::process::{Command, Stdio};
 use std::io::{Write};
-use radio_libs::{Config, Station, perror};
+use radio_libs::{Config, ConfigError, Station, perror};
 pub use structopt::StructOpt;
+use std::path::PathBuf;
 use colored::*;
 
 pub fn help() {
@@ -13,6 +14,7 @@ r#"
 {}
 	-u --url <URL>: Specifies an url to be played.
 	-s --station <station name>: Specifies the name of the station to be played
+	-c --config <config file>: Specify a different config file from the default one
 	--no-video: A flag passed down to mpv, in case you want to listen to the audio of a youtube music video or something
 	-v --verbose: Show extra information
 	-h --help: Show this help and exit
@@ -52,6 +54,9 @@ pub struct Cli {
     #[structopt(long="no-video")]
 	no_video: bool,
 
+    #[structopt(long, short, parse(from_os_str))]
+	config: Option<PathBuf>,
+
 	/// Show extra info
 	#[structopt(short, long)]
 	verbose: bool,
@@ -73,7 +78,23 @@ fn main() {
 	}
 
 	// Parse the config file
-	let config: Config = Config::load();
+	let config_result: Result<Config, ConfigError> = match args.config {
+		None => Config::load_default(),
+		Some(x) => Config::load_from_file(x)
+	};
+
+	let config = match config_result {
+		Ok(x) => x,
+		Err(error) => {
+			if args.verbose {
+				perror(format!("{}: {}", error, error.extra).as_str());
+			} else {
+				perror(format!("{}", error).as_str());
+			}
+			
+			std::process::exit(1);
+		}
+	};
 
 	let station = match args.url {
 		None => {

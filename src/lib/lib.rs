@@ -1,9 +1,12 @@
 extern crate xdg;
 
+mod errors;
+
+pub use errors::{ConfigError, ConfigErrorCode};
 use serde::{Deserialize};
 use std::fs::File; 
-use std::io::Write;
-use std::io::Read;
+use std::io::{Write, Read};
+use std::path::PathBuf;
 use inquire::{error::InquireError, Select};
 use colored::*;
 
@@ -27,21 +30,57 @@ impl std::fmt::Display for Station {
 }
 
 impl Config {
-	pub fn load() -> Config {
+	pub fn load_default() -> Result<Config, ConfigError> {
 		// Load config.json from $XDG_CONFIG_HOME/radio-cli
 		let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-		let mut config_file = Config::load_config(xdg_dirs);
+		let config_file = Config::load_config(xdg_dirs);
+
+		Config::load(config_file)		
+	}
+
+	pub fn load_from_file(path: PathBuf) -> Result<Config, ConfigError> {
+		Config::load(path)
+	}
+
+	fn load(file: PathBuf) -> Result<Config, ConfigError> {
+		let mut config_file = match File::open(file.to_path_buf()) {
+			Ok(x) => x,
+			Err(error) => 
+				return Err(ConfigError {
+					code: ConfigErrorCode::OpenError,
+					message: format!("Could not open the file \"{:?}\"", file),
+					extra: format!("{:?}", error),
+				})
+		};
 
 		// Read and parse the config into the `cfg` variable
 		let mut config: String = String::new();
-		config_file.read_to_string(&mut config).expect("Couldn't read config");
-
-		Config {
-			data: serde_json::from_str(&config).expect("Couldn't parse config"),
+		match config_file.read_to_string(&mut config) {
+			Ok(_) => {},
+			Err(error) => 
+				return Err(ConfigError {
+					code: ConfigErrorCode::ReadError,
+					message: format!("Couldn't read the file {:?}", file),
+					extra: format!("{:?}", error),
+				})
 		}
+
+		let data = match serde_json::from_str(&config) {
+			Ok(x) => x,
+			Err(error) => 
+				return Err(ConfigError {
+					code: ConfigErrorCode::ParseError,
+					message: format!("Couldn't parse config"),
+					extra: format!("{:?}", error),
+				})
+		};
+
+		Ok(Config {
+			data: data,
+		})
 	}
 
-	fn load_config(dir: xdg::BaseDirectories) -> std::fs::File {
+	fn load_config(dir: xdg::BaseDirectories) -> PathBuf {
 		match dir.find_config_file("config.json") {
 			None => {
 				// Get the name of the directory
@@ -74,9 +113,9 @@ impl Config {
 
 				println!("\tFinished writing config. Enjoy! :)\n\n");
 
-				File::open(file_ref).unwrap()  // This is read-only
+				file_ref
 			},
-			Some(x) => File::open(x).expect("Could not open config")
+			Some(x) => x
 		}
 	}
 
