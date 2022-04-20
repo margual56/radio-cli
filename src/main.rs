@@ -77,17 +77,27 @@ fn main() {
 
 	let station = match args.url {
 		None => {
-			let station_name = match args.station {
+			let station: Station = match args.station {
 				// If the station name is passed as an argument:
-				Some(x) => x,
+				Some(x) => {
+					let url = match config.get_url_for(&x) {
+						Ok(u) => u,
+						Err(()) => {
+							perror("This station is not configured :(");
+							std::process::exit(1);
+						}
+					};
+
+					Station {
+						station: x,
+						url: url
+					}
+				},
 
 				// Otherwise
 				None => {
-					// Get all the stations
-					let options = config.clone().get_all_stations();
-
 					// And let the user choose one
-					match config.clone().prompt(options) {
+					match config.clone().prompt() {
 						Ok(s) => s,
 						Err(_error) => {
 							perror("Choice not valid");
@@ -97,20 +107,11 @@ fn main() {
 				}
 			};
 
-			let url = match config.get_url_for(&station_name) {
-				Ok(u) => u,
-				Err(()) => {
-					perror("This station is not configured :(");
-					std::process::exit(1);
-				}
-			};
+			
 
-			println!("Playing {}", station_name.green());
+			println!("Playing {}", station.station.green());
 
-			Station {
-				station: station_name,
-				url: url
-			}
+			station
 		},
 		Some(x) => {
 			println!("Playing url '{}'", x.blue());

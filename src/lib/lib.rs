@@ -20,6 +20,12 @@ pub struct Config {
 	data: Vec<Station>
 }
 
+impl std::fmt::Display for Station {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.station)
+    }
+}
+
 impl Config {
 	pub fn load() -> Config {
 		// Load config.json from $XDG_CONFIG_HOME/radio-cli
@@ -31,7 +37,7 @@ impl Config {
 		config_file.read_to_string(&mut config).expect("Couldn't read config");
 
 		Config {
-			data: serde_json::from_str::<Config>(&config).expect("Couldn't parse config").data,
+			data: serde_json::from_str(&config).expect("Couldn't parse config"),
 		}
 	}
 
@@ -94,13 +100,8 @@ impl Config {
 		return stations;
 	}
 
-	pub fn prompt(self, options: Vec<String>) -> Result<String, InquireError> {
-		let res: Result<&str, InquireError> = Select::new(&"Select a station to play:".bold(), options.iter().map(|s| s.as_ref()).collect()).prompt();
-		
-		match res {
-			Ok(s) => Ok(s.to_string()),
-			Err(error) => Err(error)
-		}
+	pub fn prompt(self) -> Result<Station, InquireError> {
+		Select::new(&"Select a station to play:".bold(), self.data).prompt()
 	}
 }
 
