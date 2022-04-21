@@ -1,26 +1,30 @@
-[
-	{
-		"station": "Los 40 Principales",
-		"url": "https://20043.live.streamtheworld.com/LOS40AAC.aac"
-	},
-	{
-		"station": "Europa FM",
-		"url": "https://livefastly-webs.europafm.com/europafm/audio/chunklist.m3u8"
-	},
-	{
-		"station": "Kiss FM",
-		"url": "https://kissfm.kissfmradio.cires21.com/kissfm.mp3"
-	},
-	{
-		"station": "Cadena SER",
-		"url": "https://22333.live.streamtheworld.com/CADENASERAAC_SC?dist=onlineradiobox"
-	},
-	{
-		"station": "Rock FM",
-		"url": "https://rockfm-cope.flumotion.com/chunks.m3u8"
-	},
-	{
-		"station": "lofi",
-		"url": "https://www.youtube.com/watch?v=5qap5aO4i9A"
-	}
-]
+{
+	"config_version": "2.0.0",
+	"max_lines": 7,
+	"data": [
+		{
+			"station": "Los 40 Principales",
+			"url": "https://20043.live.streamtheworld.com/LOS40AAC.aac"
+		},
+		{
+			"station": "Europa FM",
+			"url": "https://livefastly-webs.europafm.com/europafm/audio/chunklist.m3u8"
+		},
+		{
+			"station": "Kiss FM",
+			"url": "https://kissfm.kissfmradio.cires21.com/kissfm.mp3"
+		},
+		{
+			"station": "Cadena SER",
+			"url": "https://22333.live.streamtheworld.com/CADENASERAAC_SC?dist=onlineradiobox"
+		},
+		{
+			"station": "Rock FM",
+			"url": "https://rockfm-cope.flumotion.com/chunks.m3u8"
+		},
+		{
+			"station": "lofi",
+			"url": "https://www.youtube.com/watch?v=5qap5aO4i9A"
+		}
+	]
+}
