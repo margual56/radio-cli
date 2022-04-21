@@ -1,7 +1,8 @@
 use std::process::{Command, Stdio};
 use std::io::{Write};
-use radio_libs::{Config, Station, perror};
+use radio_libs::{Config, ConfigError, Station, Version, perror};
 pub use structopt::StructOpt;
+use std::path::PathBuf;
 use colored::*;
 
 pub fn help() {
@@ -10,10 +11,13 @@ r#"
 {}
 	Usage: radio [OPTIONS]
 
+	Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program
+
 {}
 	-u --url <URL>: Specifies an url to be played.
 	-s --station <station name>: Specifies the name of the station to be played
-	--no-video: A flag passed down to mpv, in case you want to listen to the audio of a youtube music video or something
+	-c --config <config file>: Specify a different config file from the default one
+	--show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
 	-v --verbose: Show extra information
 	-h --help: Show this help and exit
 
@@ -49,12 +53,19 @@ pub struct Cli {
     #[structopt(short, long, conflicts_with="url")]
     station: Option<String>,
 	
-    #[structopt(long="no-video")]
-	no_video: bool,
+    #[structopt(long="show-video")]
+	show_video: bool,
+
+    #[structopt(long, short, parse(from_os_str))]
+	config: Option<PathBuf>,
 
 	/// Show extra info
 	#[structopt(short, long)]
 	verbose: bool,
+
+	/// Show debug info
+	#[structopt(short, long)]
+	debug: bool,
 
 	/// Show the help and exit
 	#[structopt(short, long)]
@@ -63,6 +74,14 @@ pub struct Cli {
 }
 
 fn main() {
+	let version = match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
+		Some(v) => v,
+		None => {
+			perror("There was an error parsing the program version");
+			std::process::exit(1);
+		}
+	};
+
     // Parse the arguments
     let args = Cli::from_args();
 
@@ -73,45 +92,80 @@ fn main() {
 	}
 
 	// Parse the config file
-	let config: Config = Config::load();
+	let config_result: Result<Config, ConfigError> = match args.config {
+		None => Config::load_default(),
+		Some(x) => Config::load_from_file(x)
+	};
+
+	let config = match config_result {
+		Ok(x) => x,
+		Err(error) => {
+			if args.debug {
+				perror(format!("{:?}", error).as_str());
+			} else {
+				perror(format!("{}", error).as_str());
+			}
+			
+			std::process::exit(1);
+		}
+	};
+
+	if args.debug {
+		println!("{} {}", "Program version:".bright_black().bold().italic(), 
+			format!("{}", version).bright_black().italic());
+
+		println!("{} {}", "Config version:".bright_black().bold().italic(), 
+			format!("{}", config.config_version).bright_black().italic());
+	}
+
+	if config.config_version.major < version.major {
+		println!("\n{} {}\n", "Warning!".yellow().bold(), 
+		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
+	}
 
 	let station = match args.url {
 		None => {
-			let station_name = match args.station {
+			let station: Station = match args.station {
 				// If the station name is passed as an argument:
-				Some(x) => x,
+				Some(x) => {
+					let url = match config.get_url_for(&x) {
+						Some(u) => u,
+						None => {
+							perror("This station is not configured :(");
+							std::process::exit(1);
+						}
+					};
+
+					Station {
+						station: x,
+						url: url
+					}
+				},
 
 				// Otherwise
 				None => {
-					// Get all the stations
-					let options = config.clone().get_all_stations();
-
 					// And let the user choose one
-					match config.clone().prompt(options) {
+					match config.clone().prompt() {
 						Ok(s) => s,
-						Err(_error) => {
-							perror("Choice not valid");
-							std::process::exit(1);
+						Err(error) => {
+							println!("\n\t{}", "Bye!".bold().green());
+
+							if args.verbose {
+								println!("({:?})", error);
+							}
+
+							std::process::exit(0);
 						}
 					}
 				}
 			};
+			
 
-			let url = match config.get_url_for(&station_name) {
-				Ok(u) => u,
-				Err(()) => {
-					perror("This station is not configured :(");
-					std::process::exit(1);
-				}
-			};
+			println!("Playing {}", station.station.green());
 
-			println!("Playing {}", station_name.green());
-
-			Station {
-				station: station_name,
-				url: url
-			}
+			station
 		},
+
 		Some(x) => {
 			println!("Playing url '{}'", x.blue());
 			
@@ -122,10 +176,12 @@ fn main() {
 		}
 	};
 	
+	println!("{}", "Info: press 'q' to exit".italic().bright_black());
+
 	let mut mpv = Command::new("mpv");
 	let mut mpv_args: Vec<String> = [station.url].to_vec();
 
-	if args.no_video {
+	if !args.show_video {
 		mpv_args.push(String::from("--no-video"));
 	}
 	
