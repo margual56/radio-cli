@@ -87,7 +87,7 @@ fn main() {
 		Ok(x) => x,
 		Err(error) => {
 			if args.verbose {
-				perror(format!("{}: {}", error, error.extra).as_str());
+				perror(format!("{:?}", error).as_str());
 			} else {
 				perror(format!("{}", error).as_str());
 			}
@@ -102,8 +102,8 @@ fn main() {
 				// If the station name is passed as an argument:
 				Some(x) => {
 					let url = match config.get_url_for(&x) {
-						Ok(u) => u,
-						Err(()) => {
+						Some(u) => u,
+						None => {
 							perror("This station is not configured :(");
 							std::process::exit(1);
 						}
@@ -120,20 +120,25 @@ fn main() {
 					// And let the user choose one
 					match config.clone().prompt() {
 						Ok(s) => s,
-						Err(_error) => {
-							perror("Choice not valid");
-							std::process::exit(1);
+						Err(error) => {
+							println!("\n\t{}", "Bye!".bold().green());
+
+							if args.verbose {
+								println!("({:?})", error);
+							}
+
+							std::process::exit(0);
 						}
 					}
 				}
 			};
-
 			
 
 			println!("Playing {}", station.station.green());
 
 			station
 		},
+
 		Some(x) => {
 			println!("Playing url '{}'", x.blue());
 			
@@ -144,6 +149,8 @@ fn main() {
 		}
 	};
 	
+	println!("{}", "Info: press 'q' to exit".italic().bright_black());
+
 	let mut mpv = Command::new("mpv");
 	let mut mpv_args: Vec<String> = [station.url].to_vec();
 

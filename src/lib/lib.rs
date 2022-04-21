@@ -48,7 +48,7 @@ impl Config {
 			Err(error) => 
 				return Err(ConfigError {
 					code: ConfigErrorCode::OpenError,
-					message: format!("Could not open the file \"{:?}\"", file),
+					message: format!("Could not open the file {:?}", file),
 					extra: format!("{:?}", error),
 				})
 		};
@@ -119,14 +119,14 @@ impl Config {
 		}
 	}
 
-	pub fn get_url_for(self, station_name: &str) -> Result<String, ()> {
+	pub fn get_url_for(self, station_name: &str) -> Option<String> {
 		for s in self.data.iter() {
 			if s.station.eq(station_name) {
-				return Ok(s.url.clone());
+				return Some(s.url.clone());
 			}
 		}
 
-		Err(())
+		None
 	}
 
 	pub fn get_all_stations(self) -> Vec<String> {

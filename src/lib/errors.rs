@@ -24,6 +24,6 @@ impl Display for ConfigError {
 // Implement std::fmt::Debug for ConfigError
 impl Debug for ConfigError {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{{ code: {:?}, message: \"{}\" }}", self.code, self.message) // programmer-facing output
+        write!(f, "{{ code: {:?}, message: \"{}\", info: {} }}", self.code, self.message, self.extra) // programmer-facing output
     }
 }
