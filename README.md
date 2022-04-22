@@ -51,10 +51,10 @@ The license is GPLv2
 ## Planned features 
 Don't be surprised if these are not implemented in the end hehe (if there is no interest in the project, certainly not)
 
-- [ ] Audio (mpv) controls when not in verbose mode
+- [x] ~Audio (mpv) controls when not in verbose mode~
 - [ ] Loop to selection list when pressing `q` while playing
 - [x] ~Some kind of online updating of the list of stations~ _(kind of)_
-- [ ] Code optimizations/beautification
+- [x] ~Code optimizations/beautification~
 - Languages:
   - [x] ~English~
   - [ ] Spanish
