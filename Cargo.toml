@@ -13,8 +13,8 @@ depends = ["mpv"]
 optdepends = ["youtube-dl"]
 
 [dependencies]
-structopt = "0.3.26"
-serde = {version="^1.0", features = ["derive"]}
+clap = { version = "3.1.15", features = ["derive", "clap_derive"] }
+serde = { version="^1.0", features = ["derive"] }
 serde_json = { version = "^1.0", default-features = false, features = ["alloc"] }
 colored = "2"
 xdg = "2.4.1" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html

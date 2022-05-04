@@ -1,76 +1,52 @@
 use std::process::{Command, Stdio};
 use std::io::{Write};
 use radio_libs::{Config, ConfigError, Station, Version, perror};
-pub use structopt::StructOpt;
 use std::path::PathBuf;
+pub use clap::Parser;
 use colored::*;
 
-pub fn help() {
-	println!(
-r#"
-{}
-	Usage: radio [OPTIONS]
-
-	Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program
-
-{}
-	-u --url <URL>: Specifies an url to be played.
-	-s --station <station name>: Specifies the name of the station to be played
-	-c --config <config file>: Specify a different config file from the default one
-	--show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
-	-v --verbose: Show extra information
-	-h --help: Show this help and exit
-
-{}
-	The config file is personal and you should modify it with your own preferred stations.
-	However, if you'd like to easily update from the one on GitHub, it is as easy as deleting the config.json file (see next section).
-	The next time you launch the program, it will automatically download the file again.
-	
-	Feel free to add new stations to the GitHub config file!
-
-{}
-	The config file should be located in "$XDG_CONFIG_HOME/radio-cli/config.json". 
-	If the file does not exist (e.g.: first time you run it), the program will {} of the repository.
-	Inside this config file you can find all the stations and their URLs, feel free to add the ones you listen to,
-	and it would be awesome if you added them to the main config file too! (https://github.com/margual56/radio-cli/blob/main/config.json)
-"#, 
-	"An interactive radio player that uses mpv".bold(),
-	"OPTIONS: Used to play somethig directly".bold(),
-	"UPDATE: Update the config file".bold(),
-	"CONFIG: How to add new stations, edit and such".bold(),
-	"automatically download the one from the main branch".bold()
-	);
-}
-
-
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
+#[clap(
+    author,
+    version,
+    about,
+    long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
+)]
 pub struct Cli {
-	/// Option: -u <URL>: Specifies an url to be played.
-    #[structopt(short, long)]
+    /// Option: -u <URL>: Specifies an url to be played.
+    #[clap(short, long, help = "Specifies an url to be played.")]
     url: Option<String>,
-    
-	/// Option: -s <station name>: Specifies the name of the station to be played
-    #[structopt(short, long, conflicts_with="url")]
+
+    /// Option: -s <station name>: Specifies the name of the station to be played
+    #[clap(
+        short,
+        long,
+        conflicts_with = "url",
+        help = "Specifies the name of the station to be played."
+    )]
     station: Option<String>,
-	
-    #[structopt(long="show-video")]
-	show_video: bool,
 
-    #[structopt(long, short, parse(from_os_str))]
-	config: Option<PathBuf>,
+    #[clap(
+        long = "show-video",
+        help = "If *not* present, a flag is passed down to mpv to not show the video and just play the audio."
+    )]
+    show_video: bool,
 
-	/// Show extra info
-	#[structopt(short, long)]
-	verbose: bool,
+    #[clap(
+        long,
+        short,
+        parse(from_os_str),
+        help = "Specify a different config file from the default one."
+    )]
+    config: Option<PathBuf>,
 
-	/// Show debug info
-	#[structopt(short, long)]
-	debug: bool,
+    /// Show extra info
+    #[structopt(short, long, help = "Show extra information.")]
+    verbose: bool,
 
-	/// Show the help and exit
-	#[structopt(short, long)]
-	help: bool,
-	
+    /// Show debug info
+    #[structopt(short, long)]
+    debug: bool,
 }
 
 fn main() {
@@ -83,13 +59,7 @@ fn main() {
 	};
 
     // Parse the arguments
-    let args = Cli::from_args();
-
-	// Just print the help and exit
-	if args.help {
-		help();
-		std::process::exit(0);
-	}
+    let args = Cli::parse();
 
 	// Parse the config file
 	let config_result: Result<Config, ConfigError> = match args.config {
