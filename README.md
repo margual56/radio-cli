@@ -6,6 +6,8 @@ A simple radio CLI written in rust
 
 [![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
 
+_Note: This projects has reached an state I'm confortable with, so (unless requested) I won't be adding new features, I'll just fix bugs that might show up._
+
 ### Warning! (optional dependency)
 To play youtube music you need to have `youtube-dl` installed! 
 
