@@ -1,5 +1,4 @@
-![GitHub](https://img.shields.io/github/license/margual56/radio-cli?style=flat-square)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/margual56/radio-cli/Rust/main?style=flat-square)
+![GitHub](https://img.shields.io/github/license/margual56/radio-cli?style=flat-square) ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/margual56/radio-cli/Rust/main?style=flat-square)
 
 # radio-cli
 A simple radio CLI written in rust
@@ -16,22 +15,24 @@ To use it, just type `radio-cli` after installing it and the program will guide 
 
 When playing music, __you can use the mpv keybindings__ to control it (spacebar to play/pause, etc).
 
-## Installation
+# Installation
 - On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-bin) called **radio-cli-bin**. If you have an AUR helper:
 ```bash
 $ yay -S radio-cli-bin
 ```
 _Note: radio-cli-git is now unsupported_
 
-- On other systems you will have to install it manually, without automatic update capabilities:
-```bash
-git clone https://github.com/margual56/radio-cli.git radio-cli
-cd radio-cli
-cargo build --release
-sudo cp "./target/release/radio-cli" "/usr/bin/radio"
-mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
-cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
-```
+- On other systems you can:
+   - Install it manually, without automatic update capabilities:
+      ```bash
+      git clone https://github.com/margual56/radio-cli.git radio-cli
+      cd radio-cli
+      cargo build --release
+      sudo cp "./target/release/radio-cli" "/usr/bin/radio"
+      mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
+      cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
+      ```
+   - Install it through cargo: `cargo install --git https://github.com/margual56/radio-cli`
 
 ## How it works...
 ...is very simple. The idea is to have a compilation of radio stations in [the config file](https://github.com/margual56/radio-cli/blob/main/config.json) and have a tool to be able to easily select one or the other.
