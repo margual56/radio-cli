@@ -1,4 +1,4 @@
-use std::fmt::{Display, Debug, Formatter, Result};
+use std::fmt::{Debug, Display, Formatter, Result};
 
 #[derive(Debug)]
 pub enum ConfigErrorCode {
@@ -24,6 +24,10 @@ impl Display for ConfigError {
 // Implement std::fmt::Debug for ConfigError
 impl Debug for ConfigError {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{{ code: {:?}, message: \"{}\", info: {} }}", self.code, self.message, self.extra) // programmer-facing output
+        write!(
+            f,
+            "{{ code: {:?}, message: \"{}\", info: {} }}",
+            self.code, self.message, self.extra
+        ) // programmer-facing output
     }
 }
