@@ -114,7 +114,7 @@ fn main() {
 
                     Station {
                         station: x,
-                        url: url,
+                        url,
                     }
                 }
 
