@@ -1,5 +1,4 @@
-![GitHub](https://img.shields.io/github/license/margual56/radio-cli?style=flat-square) ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/margual56/radio-cli/Rust/main?style=flat-square)
-
+![GitHub](https://img.shields.io/github/license/margual56/radio-cli) [![Rust](https://github.com/margual56/radio-cli/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/margual56/radio-cli/actions/workflows/rust.yml)
 # radio-cli
 A simple radio CLI written in rust
 
