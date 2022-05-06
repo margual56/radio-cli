@@ -112,10 +112,7 @@ fn main() {
                         }
                     };
 
-                    Station {
-                        station: x,
-                        url,
-                    }
+                    Station { station: x, url }
                 }
 
                 // Otherwise
