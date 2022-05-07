@@ -2,7 +2,7 @@
 # radio-cli
 A simple radio CLI written in rust
 
-[![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
+[![asciicast](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7.svg)](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7)
 
 _Note: This projects has reached an state I'm confortable with, so (unless requested) I won't be adding new features, I'll just fix bugs that might show up._
 
