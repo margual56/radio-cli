@@ -6,9 +6,11 @@ A simple radio CLI written in rust
 
 [![asciicast](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7.svg)](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7)
 
-
 ### Warning! (optional dependency)
 To play youtube music you need to have `youtube-dl` installed! 
+
+## Contributing and code of conduct
+Please, take a look at the [Contributing](https://github.com/margual56/radio-cli/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/margual56/radio-cli/blob/main/CODE_OF_CONDUCT.md) guidelines
 
 ## Usage
 To use it, just type `radio-cli` after installing it and the program will guide you.
@@ -17,12 +19,16 @@ When playing music, __you can use the mpv keybindings__ to control it (spacebar 
 
 # Installation
 - On Arch (and derivatives such as Manjaro), you can just install it through [the AUR package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=radio-cli-bin) called **radio-cli-bin**. If you have an AUR helper:
-```bash
-$ yay -S radio-cli-bin
-```
-_Note: radio-cli-git is now unsupported_
+   ```bash
+   $ yay -S radio-cli-bin
+   ```
+   _Note: radio-cli-git is now unsupported_<br/><br/>
 
 - On other systems you can:
+   - Install it through cargo: 
+   
+      `cargo install --git https://github.com/margual56/radio-cli`<br/><br/>
+
    - Install it manually, without automatic update capabilities:
       ```bash
       git clone https://github.com/margual56/radio-cli.git radio-cli
@@ -32,7 +38,7 @@ _Note: radio-cli-git is now unsupported_
       mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
       cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
       ```
-   - Install it through cargo: `cargo install --git https://github.com/margual56/radio-cli`
+   
 
 <details>
 <summary><h2>How it works...</h2></summary>
