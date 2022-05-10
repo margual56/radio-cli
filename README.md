@@ -6,8 +6,9 @@ A simple radio CLI written in rust
 
 [![asciicast](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7.svg)](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7)
 
-### Warning! (optional dependency)
-To play youtube music you need to have `youtube-dl` installed! 
+### Warning! (**DEPENDENCIES**)
+- *Needed*: `mpv` is called to play the audio/video. (See the [How it works](https://github.com/margual56/radio-cli#how-it-works) section).
+- *Optional dependency*: To play youtube music you need to have `yt-dlp` or `youtube-dl` installed! 
 
 ## Contributing and code of conduct
 Please, take a look at the [Contributing](https://github.com/margual56/radio-cli/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/margual56/radio-cli/blob/main/CODE_OF_CONDUCT.md) guidelines
@@ -24,20 +25,21 @@ When playing music, __you can use the mpv keybindings__ to control it (spacebar 
    ```
    _Note: radio-cli-git is now unsupported_<br/><br/>
 
-- On other systems you can:
-   - Install it through cargo: 
+- On other systems (*WARNING*, not officially supported):
+   - First, install `mpv` and optionally `yt-dlp` or `youtube-dl`. Then you can either:
+      - Install it through cargo: 
    
-      `cargo install --git https://github.com/margual56/radio-cli`<br/><br/>
+        `cargo install --git https://github.com/margual56/radio-cli`<br/><br/>
 
-   - Install it manually, without automatic update capabilities:
-      ```bash
-      git clone https://github.com/margual56/radio-cli.git radio-cli
-      cd radio-cli
-      cargo build --release
-      sudo cp "./target/release/radio-cli" "/usr/bin/radio"
-      mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
-      cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
-      ```
+      - Install it manually, without automatic update capabilities:
+         ```bash
+         git clone https://github.com/margual56/radio-cli.git radio-cli
+         cd radio-cli
+         cargo build --release
+         sudo cp "./target/release/radio-cli" "/usr/bin/radio"
+         mkdir -p "${XDG_CONFIG_HOME}/radio-cli/"
+         cp "./config.json" "${XDG_CONFIG_HOME}/radio-cli/"
+         ```
    
 
 <details>
