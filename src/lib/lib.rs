@@ -1,5 +1,6 @@
 mod config;
 mod errors;
+mod radiobrowser;
 mod station;
 mod version;
 
