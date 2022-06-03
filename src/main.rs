@@ -153,6 +153,7 @@ fn main() {
         );
     }
 
+    let mut internet = false;
     let station = match args.url {
         None => {
             let station: Station = match args.station {
@@ -167,6 +168,8 @@ fn main() {
                                     .yellow()
                                     .italic()
                             );
+
+                            internet = true;
 
                             match browser::get_station(x.clone(), &config.country_code.clone()) {
                                 Ok(s) => s.url,
@@ -204,7 +207,13 @@ fn main() {
                 }
             };
 
-            println!("Playing {}", station.station.green());
+            print!("Playing {}", station.station.green());
+
+            if internet {
+                println!(" ({})", station.url.yellow().italic());
+            } else {
+                println!();
+            }
 
             station
         }
