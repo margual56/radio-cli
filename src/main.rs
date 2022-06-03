@@ -146,7 +146,12 @@ fn main() {
     if let None = config.country_code {
         println!("\n{} {}", "Warning!".yellow().bold(), 
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
-        println!("{} {} {}\n", "You can use the option".italic(), "--list-countries".bold().italic(), "to see the available options".italic());
+        println!(
+            "{} {} {}\n",
+            "You can use the option".italic(),
+            "--list-countries".bold().italic(),
+            "to see the available options.".italic()
+        );
         println!(
             "{}",
             "No country filter will be used, so searches could be slower and less accurate."
