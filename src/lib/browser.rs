@@ -2,7 +2,7 @@ use crate::station::Station;
 use inquire::{error::InquireError, Text};
 use radiobrowser::{blocking::RadioBrowserAPI, StationOrder};
 
-fn get_station(name: String) -> Result<Station, InquireError> {
+pub fn get_station(name: String) -> Result<Station, InquireError> {
     let api = match RadioBrowserAPI::new() {
         Ok(r) => r,
         Err(_e) => panic!("Failed to create Radio Browser API!"),
@@ -35,17 +35,24 @@ fn search_station(message: &str, placeholder: &str) -> Result<String, InquireErr
 
     Text::new(message)
         .with_placeholder(placeholder)
-        .with_suggester(&|s: &str| match api
-            .get_stations()
-            .name(s)
-            .order(StationOrder::Clickcount)
-            .send()
-        {
-            Ok(s) => s
-                .iter()
-                .map(|station| String::from(&station.name))
-                .collect(),
-            Err(_e) => Vec::new(),
+        .with_suggester(&|s: &str| {
+            if s.len() > 3 {
+                match api
+                    .get_stations()
+                    .countrycode("ES")
+                    .name(s)
+                    .order(StationOrder::Clickcount)
+                    .send()
+                {
+                    Ok(s) => s
+                        .iter()
+                        .map(|station| String::from(&station.name))
+                        .collect(),
+                    Err(_e) => Vec::new(),
+                }
+            } else {
+                Vec::new()
+            }
         })
         .prompt()
 }

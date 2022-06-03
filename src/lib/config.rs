@@ -14,7 +14,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use crate::radiobrowser;
+use crate::browser;
 
 const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
 
@@ -23,6 +23,10 @@ pub struct Config {
     #[serde(deserialize_with = "deserialize_version")]
     pub config_version: Version,
     pub max_lines: Option<usize>,
+
+    #[serde(alias = "country")]
+    pub country_code: String,
+    
     pub data: Vec<Station>,
 }
 
@@ -163,7 +167,7 @@ impl Config {
         let station: Station = match res {
             Ok(s) => {
                 if s.station.eq("Other") {
-                    match radiobrowser::prompt() {
+                    match browser::prompt() {
                         Ok(r) => r,
                         Err(e) => return Err(e),
                     }
