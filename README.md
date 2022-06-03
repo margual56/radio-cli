@@ -1,16 +1,19 @@
-![GitHub](https://img.shields.io/github/license/margual56/radio-cli?style=flat-square) ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/margual56/radio-cli/Rust/main?style=flat-square)
+![GitHub](https://img.shields.io/github/license/margual56/radio-cli) [![Rust](https://github.com/margual56/radio-cli/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/margual56/radio-cli/actions/workflows/rust.yml)
+
 
 # radio-cli
 A simple radio CLI written in rust.
 
 **NEW**: Now it can search for any radio station! Just select the "Other" option to be prompted for the search.
 
-[![asciicast](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3.svg)](https://asciinema.org/a/ZRXVjIsGUWj6g7DyeR2V50Ge3?t=6)
+[![asciicast](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7.svg)](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7)
 
-_Note: This projects has reached an state I'm confortable with, so (unless requested) I won't be adding new features, I'll just fix bugs that might show up._
+### Warning! (**DEPENDENCIES**)
+- *Needed*: `mpv` is called to play the audio/video. (See the [How it works](https://github.com/margual56/radio-cli#how-it-works) section).
+- *Optional dependency*: To play youtube music you need to have `yt-dlp` or `youtube-dl` installed! 
 
-### Warning! (optional dependency)
-To play youtube music you need to have `youtube-dl` installed! 
+## Contributing and code of conduct
+Please, take a look at the [Contributing](https://github.com/margual56/radio-cli/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/margual56/radio-cli/blob/main/CODE_OF_CONDUCT.md) guidelines
 
 ## Usage
 To use it, just type `radio-cli` after installing it and the program will guide you.
@@ -50,7 +53,9 @@ If the station you want was not defined in the config, you will be able to searc
 ## Configurability
 As said before, this app is just a compilation of radios + a search prompt for online radios. It can be found in [the config file](https://github.com/margual56/radio-cli/blob/main/config.json) as a JSON, with a list of station names and their URLs.
 
+
 Of course you can add literally WHATEVER you want, even youtube videos (again, all thanks to mpv).
+</details>
 
 Otherwise, you can just use the online search functionality.
 
