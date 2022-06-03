@@ -1,10 +1,9 @@
-mod browser;
+pub mod browser;
 mod config;
 mod errors;
 mod station;
 mod version;
 
-pub use browser::get_station;
 pub use config::Config;
 pub use errors::{ConfigError, ConfigErrorCode};
 pub use station::Station;

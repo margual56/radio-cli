@@ -1,6 +1,17 @@
+use std::error::Error;
+
 use crate::{station::Station, Config};
 use inquire::{error::InquireError, Text};
-use radiobrowser::{blocking::RadioBrowserAPI, StationOrder};
+use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, StationOrder};
+
+pub fn get_countries() -> Result<Vec<ApiCountry>, Box<dyn Error>> {
+    let api = match RadioBrowserAPI::new() {
+        Ok(r) => r,
+        Err(_e) => panic!("Failed to create Radio Browser API!"),
+    };
+
+    api.get_countries().send()
+}
 
 pub fn get_station(name: String, country_code: &str) -> Result<Station, InquireError> {
     let api = match RadioBrowserAPI::new() {

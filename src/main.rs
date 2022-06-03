@@ -1,6 +1,6 @@
 pub use clap::Parser;
 use colored::*;
-use radio_libs::{get_station, perror, Config, ConfigError, Station, Version};
+use radio_libs::{browser, perror, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -13,11 +13,11 @@ use std::process::{Command, Stdio};
     long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
 )]
 pub struct Cli {
-    /// Option: -u <URL>: Specifies an url to be played.
+    /// Option: -u --url <URL>: Specifies an url to be played.
     #[clap(short, long, help = "Specifies an url to be played.")]
     url: Option<String>,
 
-    /// Option: -s <station name>: Specifies the name of the station to be played
+    /// Option: -s --station <station name>: Specifies the name of the station to be played
     #[clap(
         short,
         long,
@@ -26,12 +26,14 @@ pub struct Cli {
     )]
     station: Option<String>,
 
+    /// Flag: --show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
     #[clap(
         long = "show-video",
         help = "If *not* present, a flag is passed down to mpv to not show the video and just play the audio."
     )]
     show_video: bool,
 
+    /// Option: -c --config: Specify a config file other than the default.
     #[clap(
         long,
         short,
@@ -40,11 +42,19 @@ pub struct Cli {
     )]
     config: Option<PathBuf>,
 
+    /// Option: --country-code <CODE>: Specify a country code to filter the search results
     #[clap(
         long = "country-code",
         help = "Specify a country code to filter the search."
     )]
     country_code: Option<String>,
+
+    /// Flag: --list-countries: List all the available countries and country codes to put in the config.
+    #[clap(
+        long = "list-countries",
+        help = "List all the available countries and country codes to put in the config."
+    )]
+    list_countries: bool,
 
     /// Show extra info
     #[structopt(short, long, help = "Show extra information.")]
@@ -66,6 +76,20 @@ fn main() {
 
     // Parse the arguments
     let args = Cli::parse();
+
+    if args.list_countries {
+        let result = browser::get_countries();
+
+        if let Ok(countries) = result {
+            for country in countries {
+                println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
+            }
+        } else {
+            println!("Could not connect to the server, please check your connection.");
+        }
+
+        std::process::exit(0);
+    }
 
     // Parse the config file
     let config_result: Result<Config, ConfigError> = match args.config {
@@ -144,7 +168,7 @@ fn main() {
                                     .italic()
                             );
 
-                            match get_station(x.clone(), &config.country_code.clone()) {
+                            match browser::get_station(x.clone(), &config.country_code.clone()) {
                                 Ok(s) => s.url,
                                 Err(e) => {
                                     perror("This station was not found :(");
