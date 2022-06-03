@@ -1,6 +1,6 @@
 pub use clap::Parser;
 use colored::*;
-use radio_libs::{perror, Config, ConfigError, Station, Version};
+use radio_libs::{get_station, perror, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -40,6 +40,12 @@ pub struct Cli {
     )]
     config: Option<PathBuf>,
 
+    #[clap(
+        long = "country-code",
+        help = "Specify a country code to filter the search."
+    )]
+    country_code: Option<String>,
+
     /// Show extra info
     #[structopt(short, long, help = "Show extra information.")]
     verbose: bool,
@@ -68,13 +74,27 @@ fn main() {
     };
 
     let config = match config_result {
-        Ok(x) => x,
+        Ok(mut x) => {
+            if let Some(cc) = args.country_code {
+                x.country_code = cc;
+            }
+
+            x
+        }
         Err(error) => {
             if args.debug {
                 perror(format!("{:?}", error).as_str());
             } else {
                 perror(format!("{}", error).as_str());
+                print!("{}", "Try pasing the debug flag (-d). ".yellow());
             }
+
+            println!(
+                "{}",
+                "Deleting your config will download the updated one."
+                    .yellow()
+                    .bold()
+            );
 
             std::process::exit(1);
         }
@@ -99,16 +119,43 @@ fn main() {
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
+    if config.country_code.len() != 2 {
+        println!("\n{} {}\n", "Warning!".yellow().bold(), 
+		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
+        println!(
+            "{}",
+            "No country filter will be used, so searches could be slower and less accurate."
+                .italic()
+        );
+    }
+
     let station = match args.url {
         None => {
             let station: Station = match args.station {
                 // If the station name is passed as an argument:
                 Some(x) => {
-                    let url = match config.get_url_for(&x) {
+                    let url = match config.clone().get_url_for(&x) {
                         Some(u) => u,
                         None => {
-                            perror("This station is not configured :(");
-                            std::process::exit(1);
+                            println!(
+                                "{}",
+                                "Station not found in local config, searching on the internet..."
+                                    .yellow()
+                                    .italic()
+                            );
+
+                            match get_station(x.clone(), &config.country_code.clone()) {
+                                Ok(s) => s.url,
+                                Err(e) => {
+                                    perror("This station was not found :(");
+
+                                    if args.debug {
+                                        println!("{}", e);
+                                    }
+
+                                    std::process::exit(1);
+                                }
+                            }
                         }
                     };
 

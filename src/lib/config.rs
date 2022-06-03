@@ -26,7 +26,7 @@ pub struct Config {
 
     #[serde(alias = "country")]
     pub country_code: String,
-    
+
     pub data: Vec<Station>,
 }
 
@@ -157,17 +157,17 @@ impl Config {
     pub fn prompt(self) -> Result<Station, InquireError> {
         let res: Result<Station, InquireError>;
         if let Some(lines) = self.max_lines {
-            res = Select::new(&"Select a station to play:".bold(), self.data)
+            res = Select::new(&"Select a station to play:".bold(), self.data.clone())
                 .with_page_size(lines)
                 .prompt();
         } else {
-            res = Select::new(&"Select a station to play:".bold(), self.data).prompt();
+            res = Select::new(&"Select a station to play:".bold(), self.data.clone()).prompt();
         }
 
         let station: Station = match res {
             Ok(s) => {
                 if s.station.eq("Other") {
-                    match browser::prompt() {
+                    match browser::prompt(self) {
                         Ok(r) => r,
                         Err(e) => return Err(e),
                     }

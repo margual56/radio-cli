@@ -1,14 +1,14 @@
+mod browser;
 mod config;
 mod errors;
-mod browser;
 mod station;
 mod version;
 
+pub use browser::get_station;
 pub use config::Config;
 pub use errors::{ConfigError, ConfigErrorCode};
 pub use station::Station;
 pub use version::Version;
-pub use browser::get_station;
 
 use colored::*;
 

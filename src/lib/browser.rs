@@ -1,8 +1,8 @@
-use crate::station::Station;
+use crate::{station::Station, Config};
 use inquire::{error::InquireError, Text};
 use radiobrowser::{blocking::RadioBrowserAPI, StationOrder};
 
-pub fn get_station(name: String) -> Result<Station, InquireError> {
+pub fn get_station(name: String, country_code: &str) -> Result<Station, InquireError> {
     let api = match RadioBrowserAPI::new() {
         Ok(r) => r,
         Err(_e) => panic!("Failed to create Radio Browser API!"),
@@ -11,7 +11,7 @@ pub fn get_station(name: String) -> Result<Station, InquireError> {
     match api
         .get_stations()
         .name(name)
-        .order(StationOrder::Clickcount)
+        .countrycode(country_code)
         .send()
     {
         Ok(s) => match s.get(0) {
@@ -27,7 +27,11 @@ pub fn get_station(name: String) -> Result<Station, InquireError> {
     }
 }
 
-fn search_station(message: &str, placeholder: &str) -> Result<String, InquireError> {
+fn search_station(
+    message: &str,
+    placeholder: &str,
+    country_code: &str,
+) -> Result<String, InquireError> {
     let api = match RadioBrowserAPI::new() {
         Ok(r) => r,
         Err(_e) => panic!("Failed to create Radio Browser API!"),
@@ -39,7 +43,7 @@ fn search_station(message: &str, placeholder: &str) -> Result<String, InquireErr
             if s.len() > 3 {
                 match api
                     .get_stations()
-                    .countrycode("ES")
+                    .countrycode(country_code)
                     .name(s)
                     .order(StationOrder::Clickcount)
                     .send()
@@ -57,11 +61,15 @@ fn search_station(message: &str, placeholder: &str) -> Result<String, InquireErr
         .prompt()
 }
 
-pub fn prompt() -> Result<Station, InquireError> {
-    let station = search_station("Search for a station: ", "Station name");
+pub fn prompt(config: Config) -> Result<Station, InquireError> {
+    let station = search_station(
+        "Search for a station: ",
+        "Station name",
+        &config.country_code.clone(),
+    );
 
     match station {
-        Ok(s) => get_station(s),
+        Ok(s) => get_station(s, &config.country_code.clone()),
         Err(e) => Err(e),
     }
 }
