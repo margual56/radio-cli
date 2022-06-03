@@ -25,7 +25,7 @@ pub struct Config {
     pub max_lines: Option<usize>,
 
     #[serde(alias = "country")]
-    pub country_code: String,
+    pub country_code: Option<String>,
 
     pub data: Vec<Station>,
 }

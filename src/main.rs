@@ -100,7 +100,7 @@ fn main() {
     let config = match config_result {
         Ok(mut x) => {
             if let Some(cc) = args.country_code {
-                x.country_code = cc;
+                x.country_code = Some(cc);
             }
 
             x
@@ -143,9 +143,10 @@ fn main() {
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
-    if config.country_code.len() != 2 {
-        println!("\n{} {}\n", "Warning!".yellow().bold(), 
+    if let None = config.country_code {
+        println!("\n{} {}", "Warning!".yellow().bold(), 
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
+        println!("{} {} {}\n", "You can use the option".italic(), "--list-countries".bold().italic(), "to see the available options".italic());
         println!(
             "{}",
             "No country filter will be used, so searches could be slower and less accurate."
@@ -171,7 +172,7 @@ fn main() {
 
                             internet = true;
 
-                            match browser::get_station(x.clone(), &config.country_code.clone()) {
+                            match browser::get_station(x.clone(), config.country_code.clone()) {
                                 Ok(s) => s.url,
                                 Err(e) => {
                                     perror("This station was not found :(");
