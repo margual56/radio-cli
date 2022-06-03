@@ -1,3 +1,4 @@
+pub mod browser;
 mod config;
 mod errors;
 mod station;

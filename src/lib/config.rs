@@ -14,6 +14,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use crate::browser;
+
 const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
 
 #[derive(Deserialize, Debug, Clone)]
@@ -21,6 +23,10 @@ pub struct Config {
     #[serde(deserialize_with = "deserialize_version")]
     pub config_version: Version,
     pub max_lines: Option<usize>,
+
+    #[serde(alias = "country")]
+    pub country_code: Option<String>,
+
     pub data: Vec<Station>,
 }
 
@@ -62,8 +68,15 @@ impl Config {
             }
         }
 
-        let data: Config = match serde_json::from_str(&config) {
-            Ok(x) => x,
+        let data: Config = match serde_json::from_str::<Config>(&config) {
+            Ok(mut x) => {
+                x.data.push(Station {
+                    station: "Other".to_string(),
+                    url: "".to_string(),
+                });
+
+                x
+            }
             Err(error) => {
                 return Err(ConfigError {
                     code: ConfigErrorCode::ParseError,
@@ -142,13 +155,30 @@ impl Config {
     }
 
     pub fn prompt(self) -> Result<Station, InquireError> {
+        let res: Result<Station, InquireError>;
         if let Some(lines) = self.max_lines {
-            Select::new(&"Select a station to play:".bold(), self.data)
+            res = Select::new(&"Select a station to play:".bold(), self.data.clone())
                 .with_page_size(lines)
-                .prompt()
+                .prompt();
         } else {
-            Select::new(&"Select a station to play:".bold(), self.data).prompt()
+            res = Select::new(&"Select a station to play:".bold(), self.data.clone()).prompt();
         }
+
+        let station: Station = match res {
+            Ok(s) => {
+                if s.station.eq("Other") {
+                    match browser::prompt(self) {
+                        Ok(r) => r,
+                        Err(e) => return Err(e),
+                    }
+                } else {
+                    s
+                }
+            }
+            Err(e) => return Err(e),
+        };
+
+        return Ok(station);
     }
 }
 

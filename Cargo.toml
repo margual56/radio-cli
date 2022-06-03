@@ -2,7 +2,7 @@
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "A simple radio cli for listening to your favourite streams from the console"
 name = "radio-cli"
-version = "2.0.1"
+version = "2.1.0"
 edition = "2021"
 homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
@@ -20,6 +20,7 @@ colored = "2"
 xdg = "2.4.1" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
 inquire = "0.2.1"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
+radiobrowser = { version = "0.4.0"}
 
 [lib]
 path = "src/lib/lib.rs"

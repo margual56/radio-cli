@@ -1,6 +1,6 @@
 pub use clap::Parser;
 use colored::*;
-use radio_libs::{perror, Config, ConfigError, Station, Version};
+use radio_libs::{browser, perror, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -13,11 +13,11 @@ use std::process::{Command, Stdio};
     long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
 )]
 pub struct Cli {
-    /// Option: -u <URL>: Specifies an url to be played.
+    /// Option: -u --url <URL>: Specifies an url to be played.
     #[clap(short, long, help = "Specifies an url to be played.")]
     url: Option<String>,
 
-    /// Option: -s <station name>: Specifies the name of the station to be played
+    /// Option: -s --station <station name>: Specifies the name of the station to be played
     #[clap(
         short,
         long,
@@ -26,12 +26,14 @@ pub struct Cli {
     )]
     station: Option<String>,
 
+    /// Flag: --show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
     #[clap(
         long = "show-video",
         help = "If *not* present, a flag is passed down to mpv to not show the video and just play the audio."
     )]
     show_video: bool,
 
+    /// Option: -c --config: Specify a config file other than the default.
     #[clap(
         long,
         short,
@@ -39,6 +41,20 @@ pub struct Cli {
         help = "Specify a different config file from the default one."
     )]
     config: Option<PathBuf>,
+
+    /// Option: --country-code <CODE>: Specify a country code to filter the search results
+    #[clap(
+        long = "country-code",
+        help = "Specify a country code to filter the search."
+    )]
+    country_code: Option<String>,
+
+    /// Flag: --list-countries: List all the available countries and country codes to put in the config.
+    #[clap(
+        long = "list-countries",
+        help = "List all the available countries and country codes to put in the config."
+    )]
+    list_countries: bool,
 
     /// Show extra info
     #[structopt(short, long, help = "Show extra information.")]
@@ -61,6 +77,20 @@ fn main() {
     // Parse the arguments
     let args = Cli::parse();
 
+    if args.list_countries {
+        let result = browser::get_countries();
+
+        if let Ok(countries) = result {
+            for country in countries {
+                println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
+            }
+        } else {
+            println!("Could not connect to the server, please check your connection.");
+        }
+
+        std::process::exit(0);
+    }
+
     // Parse the config file
     let config_result: Result<Config, ConfigError> = match args.config {
         None => Config::load_default(),
@@ -68,13 +98,27 @@ fn main() {
     };
 
     let config = match config_result {
-        Ok(x) => x,
+        Ok(mut x) => {
+            if let Some(cc) = args.country_code {
+                x.country_code = Some(cc);
+            }
+
+            x
+        }
         Err(error) => {
             if args.debug {
                 perror(format!("{:?}", error).as_str());
             } else {
                 perror(format!("{}", error).as_str());
+                print!("{}", "Try pasing the debug flag (-d). ".yellow());
             }
+
+            println!(
+                "{}",
+                "Deleting your config will download the updated one."
+                    .yellow()
+                    .bold()
+            );
 
             std::process::exit(1);
         }
@@ -99,16 +143,52 @@ fn main() {
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
+    if let None = config.country_code {
+        println!("\n{} {}", "Warning!".yellow().bold(), 
+		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
+        println!(
+            "{} {} {}\n",
+            "You can use the option".italic(),
+            "--list-countries".bold().italic(),
+            "to see the available options.".italic()
+        );
+        println!(
+            "{}",
+            "No country filter will be used, so searches could be slower and less accurate."
+                .italic()
+        );
+    }
+
+    let mut internet = false;
     let station = match args.url {
         None => {
             let station: Station = match args.station {
                 // If the station name is passed as an argument:
                 Some(x) => {
-                    let url = match config.get_url_for(&x) {
+                    let url = match config.clone().get_url_for(&x) {
                         Some(u) => u,
                         None => {
-                            perror("This station is not configured :(");
-                            std::process::exit(1);
+                            println!(
+                                "{}",
+                                "Station not found in local config, searching on the internet..."
+                                    .yellow()
+                                    .italic()
+                            );
+
+                            internet = true;
+
+                            match browser::get_station(x.clone(), config.country_code.clone()) {
+                                Ok(s) => s.url,
+                                Err(e) => {
+                                    perror("This station was not found :(");
+
+                                    if args.debug {
+                                        println!("{}", e);
+                                    }
+
+                                    std::process::exit(1);
+                                }
+                            }
                         }
                     };
 
@@ -133,7 +213,13 @@ fn main() {
                 }
             };
 
-            println!("Playing {}", station.station.green());
+            print!("Playing {}", station.station.green());
+
+            if internet {
+                println!(" ({})", station.url.yellow().italic());
+            } else {
+                println!();
+            }
 
             station
         }
