@@ -1,6 +1,7 @@
 pub use clap::Parser;
 use colored::*;
-use radio_libs::{browser, perror, Config, ConfigError, Station, Version};
+use radio_libs::browser::Browser;
+use radio_libs::{perror, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -78,9 +79,7 @@ fn main() {
     let args = Cli::parse();
 
     if args.list_countries {
-        let result = browser::get_countries();
-
-        if let Ok(countries) = result {
+        if let Ok(countries) = Browser::get_countries() {
             for country in countries {
                 println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
             }
@@ -177,7 +176,20 @@ fn main() {
 
                             internet = true;
 
-                            match browser::get_station(x.clone(), config.country_code.clone()) {
+                            let brows = match Browser::new(config) {
+                                Ok(b) => b,
+                                Err(e) => {
+                                    perror("Could not connect with the API");
+
+                                    if args.debug {
+                                        println!("{}", e);
+                                    }
+
+                                    std::process::exit(1);
+                                }
+                            };
+
+                            match brows.get_station(x.clone()) {
                                 Ok(s) => s.url,
                                 Err(e) => {
                                     perror("This station was not found :(");
@@ -199,7 +211,10 @@ fn main() {
                 None => {
                     // And let the user choose one
                     match config.clone().prompt() {
-                        Ok(s) => s,
+                        Ok((s, b)) => {
+                            internet = b;
+                            s
+                        }
                         Err(error) => {
                             println!("\n\t{}", "Bye!".bold().green());
 
