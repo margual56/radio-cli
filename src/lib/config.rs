@@ -14,7 +14,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use crate::browser;
+use crate::browser::Browser;
 
 const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
 
@@ -154,31 +154,45 @@ impl Config {
         return stations;
     }
 
-    pub fn prompt(self) -> Result<Station, InquireError> {
+    /// Prompts the user to select a station.
+    /// Returns a station and if the station was taken from the internet.
+    pub fn prompt(self) -> Result<(Station, bool), InquireError> {
         let res: Result<Station, InquireError>;
-        if let Some(lines) = self.max_lines {
-            res = Select::new(&"Select a station to play:".bold(), self.data.clone())
-                .with_page_size(lines)
-                .prompt();
-        } else {
-            res = Select::new(&"Select a station to play:".bold(), self.data.clone()).prompt();
-        }
 
+        let max_lines: usize = match self.max_lines {
+            Some(x) => x,
+            None => Select::<Station>::DEFAULT_PAGE_SIZE,
+        };
+
+        res = Select::new(&"Select a station to play:".bold(), self.data.clone())
+            .with_page_size(max_lines)
+            .prompt();
+
+        let internet: bool;
         let station: Station = match res {
             Ok(s) => {
                 if s.station.eq("Other") {
-                    match browser::prompt(self) {
+                    internet = true;
+                    let result = Browser::new(self);
+
+                    let brow = match result {
+                        Ok(b) => b,
+                        Err(_e) => return Err(InquireError::OperationInterrupted),
+                    };
+
+                    match brow.prompt() {
                         Ok(r) => r,
                         Err(e) => return Err(e),
                     }
                 } else {
+                    internet = false;
                     s
                 }
             }
             Err(e) => return Err(e),
         };
 
-        return Ok(station);
+        return Ok((station, internet));
     }
 }
 
