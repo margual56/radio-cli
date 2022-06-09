@@ -91,7 +91,7 @@ impl Browser {
             .with_suggester(&|s: &str| {
                 self.stations
                     .iter()
-                    .filter(|station| station.name.contains(s))
+                    .filter(|station| station.name.contains(s) || station.tags.contains(s))
                     .map(|station| String::from(&station.name))
                     .collect()
             })
@@ -100,7 +100,7 @@ impl Browser {
     }
 
     pub fn prompt(self) -> Result<Station, InquireError> {
-        let station = self.search_station("Search for a station: ", "Station name");
+        let station = self.search_station("Search for a station: ", "Names or keywords");
 
         match station {
             Ok(s) => self.get_station(s.to_string()),
