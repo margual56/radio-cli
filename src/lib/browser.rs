@@ -88,13 +88,15 @@ impl Browser {
 
         Text::new(message)
             .with_placeholder(placeholder)
-            .with_suggester(&|s: &str| {
-                self.stations
-                    .iter()
-                    .filter(|station| station.name.contains(s) || station.tags.contains(s))
-                    .map(|station| String::from(&station.name))
-                    .collect()
-            })
+            // Deprecated: need to change to `with_autosuggester`
+            // But for that, ApiStation needs to implement the Clone trait
+            // .with_suggester(&|s: &str| {
+            //     self.stations
+            //         .iter()
+            //         .filter(|station| station.name.contains(s) || station.tags.contains(s))
+            //         .map(|station| String::from(&station.name))
+            //         .collect()
+            // })
             .with_page_size(max_lines)
             .prompt()
     }

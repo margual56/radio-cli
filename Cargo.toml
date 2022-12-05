@@ -13,14 +13,16 @@ depends = ["mpv"]
 optdepends = ["youtube-dl"]
 
 [dependencies]
-clap = { version = "3.1.15", features = ["derive", "clap_derive"] }
-serde = { version="^1.0", features = ["derive"] }
-serde_json = { version = "^1.0", default-features = false, features = ["alloc"] }
-colored = "2"
-xdg = "2.4.1" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
-inquire = "0.2.1"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-radiobrowser = { version = "0.4.0"}
+clap = { version = "^4", features = ["derive", "clap_derive"] }
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = { version = "^1.0", default-features = false, features = [
+    "alloc",
+] }
+colored = "^2"
+xdg = "^2.4" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
+inquire = "^0.5"
+reqwest = { version = "^0.11", features = ["blocking", "json"] }
+radiobrowser = { version = "^0.4" }
 
 [lib]
 path = "src/lib/lib.rs"

@@ -38,7 +38,6 @@ pub struct Cli {
     #[clap(
         long,
         short,
-        parse(from_os_str),
         help = "Specify a different config file from the default one."
     )]
     config: Option<PathBuf>,
