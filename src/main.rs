@@ -1,69 +1,8 @@
-pub use clap::Parser;
+use clap::Parser;
 use colored::*;
-use radio_libs::browser::Browser;
-use radio_libs::{perror, Config, ConfigError, Station, Version};
+use radio_libs::{browser::Browser, perror, Cli, Config, ConfigError, Station, Version};
 use std::io::Write;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
-
-#[derive(Parser, Debug)]
-#[clap(
-    author,
-    version,
-    about,
-    long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
-)]
-pub struct Cli {
-    /// Option: -u --url <URL>: Specifies an url to be played.
-    #[clap(short, long, help = "Specifies an url to be played.")]
-    url: Option<String>,
-
-    /// Option: -s --station <station name>: Specifies the name of the station to be played
-    #[clap(
-        short,
-        long,
-        conflicts_with = "url",
-        help = "Specifies the name of the station to be played."
-    )]
-    station: Option<String>,
-
-    /// Flag: --show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
-    #[clap(
-        long = "show-video",
-        help = "If *not* present, a flag is passed down to mpv to not show the video and just play the audio."
-    )]
-    show_video: bool,
-
-    /// Option: -c --config: Specify a config file other than the default.
-    #[clap(
-        long,
-        short,
-        help = "Specify a different config file from the default one."
-    )]
-    config: Option<PathBuf>,
-
-    /// Option: --country-code <CODE>: Specify a country code to filter the search results
-    #[clap(
-        long = "country-code",
-        help = "Specify a country code to filter the search."
-    )]
-    country_code: Option<String>,
-
-    /// Flag: --list-countries: List all the available countries and country codes to put in the config.
-    #[clap(
-        long = "list-countries",
-        help = "List all the available countries and country codes to put in the config."
-    )]
-    list_countries: bool,
-
-    /// Show extra info
-    #[structopt(short, long, help = "Show extra information.")]
-    verbose: bool,
-
-    /// Show debug info
-    #[structopt(short, long)]
-    debug: bool,
-}
 
 fn main() {
     let version = match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
@@ -157,75 +96,9 @@ fn main() {
         );
     }
 
-    let mut internet = false;
     let station = match args.url {
         None => {
-            let station: Station = match args.station {
-                // If the station name is passed as an argument:
-                Some(x) => {
-                    let url = match config.clone().get_url_for(&x) {
-                        Some(u) => u,
-                        None => {
-                            println!(
-                                "{}",
-                                "Station not found in local config, searching on the internet..."
-                                    .yellow()
-                                    .italic()
-                            );
-
-                            internet = true;
-
-                            let brows = match Browser::new(config) {
-                                Ok(b) => b,
-                                Err(e) => {
-                                    perror("Could not connect with the API");
-
-                                    if args.debug {
-                                        println!("{}", e);
-                                    }
-
-                                    std::process::exit(1);
-                                }
-                            };
-
-                            match brows.get_station(x.clone()) {
-                                Ok(s) => s.url,
-                                Err(e) => {
-                                    perror("This station was not found :(");
-
-                                    if args.debug {
-                                        println!("{}", e);
-                                    }
-
-                                    std::process::exit(1);
-                                }
-                            }
-                        }
-                    };
-
-                    Station { station: x, url }
-                }
-
-                // Otherwise
-                None => {
-                    // And let the user choose one
-                    match config.clone().prompt() {
-                        Ok((s, b)) => {
-                            internet = b;
-                            s
-                        }
-                        Err(error) => {
-                            println!("\n\t{}", "Bye!".bold().green());
-
-                            if args.verbose {
-                                println!("({:?})", error);
-                            }
-
-                            std::process::exit(0);
-                        }
-                    }
-                }
-            };
+            let (station, internet) = get_station(args.station, args.verbose, args.debug, config);
 
             print!("Playing {}", station.station.green());
 
@@ -250,14 +123,32 @@ fn main() {
 
     println!("{}", "Info: press 'q' to exit".italic().bright_black());
 
+    let output_status = run_mpv(station, args.show_video, args.verbose);
+
+    if !output_status.success() {
+        perror(format!("mpv {}", output_status).as_str());
+
+        if !args.verbose {
+            println!(
+                "{}: {}",
+                "Hint".italic().bold(),
+                "Try running radio-cli with the verbose flag (-v or --verbose)".italic()
+            );
+        }
+
+        std::process::exit(2);
+    }
+}
+
+fn run_mpv(station: Station, show_video: bool, verbose: bool) -> std::process::ExitStatus {
     let mut mpv = Command::new("mpv");
     let mut mpv_args: Vec<String> = [station.url].to_vec();
 
-    if !args.show_video {
+    if !show_video {
         mpv_args.push(String::from("--no-video"));
     }
 
-    if !args.verbose {
+    if !verbose {
         mpv_args.push(String::from("--really-quiet"));
     }
 
@@ -271,17 +162,84 @@ fn main() {
     std::io::stdout().write_all(&output.stdout).unwrap();
     std::io::stderr().write_all(&output.stderr).unwrap();
 
-    if !output.status.success() {
-        perror(format!("mpv {}", output.status).as_str());
+    output.status
+}
 
-        if !args.verbose {
-            println!(
-                "{}: {}",
-                "Hint".italic().bold(),
-                "Try running radio-cli with the verbose flag (-v or --verbose)".italic()
-            );
+fn get_station(
+    station: Option<String>,
+    verbose: bool,
+    debug: bool,
+    config: Config,
+) -> (Station, bool) {
+    let mut internet = false;
+
+    match station {
+        // If the station name is passed as an argument:
+        Some(x) => {
+            let url = match config.clone().get_url_for(&x) {
+                Some(u) => u,
+                None => {
+                    println!(
+                        "{}",
+                        "Station not found in local config, searching on the internet..."
+                            .yellow()
+                            .italic()
+                    );
+
+                    internet = true;
+
+                    let brows = match Browser::new(config) {
+                        Ok(b) => b,
+                        Err(e) => {
+                            perror("Could not connect with the API");
+
+                            if debug {
+                                println!("{}", e);
+                            }
+
+                            std::process::exit(1);
+                        }
+                    };
+
+                    match brows.get_station(x.clone()) {
+                        Ok(s) => s.url,
+                        Err(e) => {
+                            perror("This station was not found :(");
+
+                            if debug {
+                                println!("{}", e);
+                            }
+
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            };
+
+            (
+                Station {
+                    station: String::from(x),
+                    url,
+                },
+                internet,
+            )
         }
 
-        std::process::exit(2);
+        // Otherwise
+        None => {
+            // And let the user choose one
+            match config.clone().prompt() {
+                Ok((s, b)) => (s, b),
+                Err(error) => {
+                    println!("\n\t{}", "Bye!".bold().green());
+
+                    if verbose {
+                        println!("({:?})", error);
+                    }
+
+                    std::process::exit(0);
+                }
+            }
+        }
     }
 }
