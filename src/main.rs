@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{browser::Browser, perror, Cli, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -8,13 +9,16 @@ fn main() {
     let version = match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
         Some(v) => v,
         None => {
-            perror("There was an error parsing the program version");
+            error!("There was an error parsing the program version");
             std::process::exit(1);
         }
     };
 
     // Parse the arguments
     let args = Cli::parse();
+    env_logger::Builder::new()
+        .filter_level(args.verbose.log_level_filter())
+        .init();
 
     if args.list_countries {
         if let Ok(countries) = Browser::get_countries() {
@@ -22,7 +26,7 @@ fn main() {
                 println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
             }
         } else {
-            println!("Could not connect to the server, please check your connection.");
+            error!("Could not connect to the server, please check your connection.");
         }
 
         std::process::exit(0);
@@ -43,14 +47,11 @@ fn main() {
             x
         }
         Err(error) => {
-            if args.debug {
-                perror(format!("{:?}", error).as_str());
-            } else {
-                perror(format!("{}", error).as_str());
-                print!("{}", "Try pasing the debug flag (-d). ".yellow());
-            }
+            debug!("{:?}", error);
+            error!("{}", error);
+            info!("{}", "Try pasing the debug flag (-vvv). ".yellow());
 
-            println!(
+            info!(
                 "{}",
                 "Deleting your config will download the updated one."
                     .yellow()
@@ -61,35 +62,33 @@ fn main() {
         }
     };
 
-    if args.debug {
-        println!(
-            "{} {}",
-            "Program version:".bright_black().bold().italic(),
-            format!("{}", version).bright_black().italic()
-        );
+    debug!(
+        "{} {}",
+        "Program version:".bright_black().bold().italic(),
+        format!("{}", version).bright_black().italic()
+    );
 
-        println!(
-            "{} {}",
-            "Config version:".bright_black().bold().italic(),
-            format!("{}", config.config_version).bright_black().italic()
-        );
-    }
+    debug!(
+        "{} {}",
+        "Config version:".bright_black().bold().italic(),
+        format!("{}", config.config_version).bright_black().italic()
+    );
 
     if config.config_version.major < version.major {
-        println!("\n{} {}\n", "Warning!".yellow().bold(), 
+        warn!("\n{} {}\n", "Warning!".yellow().bold(), 
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
     if let None = config.country_code {
-        println!("\n{} {}", "Warning!".yellow().bold(), 
+        warn!("\n{} {}", "Warning!".yellow().bold(), 
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
-        println!(
+        info!(
             "{} {} {}\n",
             "You can use the option".italic(),
             "--list-countries".bold().italic(),
             "to see the available options.".italic()
         );
-        println!(
+        warn!(
             "{}",
             "No country filter will be used, so searches could be slower and less accurate."
                 .italic()
@@ -98,7 +97,7 @@ fn main() {
 
     let station = match args.url {
         None => {
-            let (station, internet) = get_station(args.station, args.verbose, args.debug, config);
+            let (station, internet) = get_station(args.station, config);
 
             print!("Playing {}", station.station.green());
 
@@ -123,16 +122,16 @@ fn main() {
 
     println!("{}", "Info: press 'q' to exit".italic().bright_black());
 
-    let output_status = run_mpv(station, args.show_video, args.verbose);
+    let output_status = run_mpv(station, args.show_video);
 
     if !output_status.success() {
         perror(format!("mpv {}", output_status).as_str());
 
-        if !args.verbose {
+        if !log_enabled!(log::Level::Info) {
             println!(
                 "{}: {}",
                 "Hint".italic().bold(),
-                "Try running radio-cli with the verbose flag (-v or --verbose)".italic()
+                "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
             );
         }
 
@@ -140,7 +139,7 @@ fn main() {
     }
 }
 
-fn run_mpv(station: Station, show_video: bool, verbose: bool) -> std::process::ExitStatus {
+fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     let mut mpv = Command::new("mpv");
     let mut mpv_args: Vec<String> = [station.url].to_vec();
 
@@ -148,7 +147,7 @@ fn run_mpv(station: Station, show_video: bool, verbose: bool) -> std::process::E
         mpv_args.push(String::from("--no-video"));
     }
 
-    if !verbose {
+    if !log_enabled!(log::Level::Info) {
         mpv_args.push(String::from("--really-quiet"));
     }
 
@@ -165,12 +164,7 @@ fn run_mpv(station: Station, show_video: bool, verbose: bool) -> std::process::E
     output.status
 }
 
-fn get_station(
-    station: Option<String>,
-    verbose: bool,
-    debug: bool,
-    config: Config,
-) -> (Station, bool) {
+fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
     let mut internet = false;
 
     match station {
@@ -191,11 +185,9 @@ fn get_station(
                     let brows = match Browser::new(config) {
                         Ok(b) => b,
                         Err(e) => {
-                            perror("Could not connect with the API");
+                            error!("Could not connect with the API");
 
-                            if debug {
-                                println!("{}", e);
-                            }
+                            debug!("{}", e);
 
                             std::process::exit(1);
                         }
@@ -204,11 +196,8 @@ fn get_station(
                     match brows.get_station(x.clone()) {
                         Ok(s) => s.url,
                         Err(e) => {
-                            perror("This station was not found :(");
-
-                            if debug {
-                                println!("{}", e);
-                            }
+                            error!("This station was not found :(");
+                            debug!("{}", e);
 
                             std::process::exit(1);
                         }
@@ -233,9 +222,7 @@ fn get_station(
                 Err(error) => {
                     println!("\n\t{}", "Bye!".bold().green());
 
-                    if verbose {
-                        println!("({:?})", error);
-                    }
+                    info!("({:?})", error);
 
                     std::process::exit(0);
                 }

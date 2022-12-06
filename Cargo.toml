@@ -23,6 +23,9 @@ xdg = "^2.4" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
 inquire = "^0.5"
 reqwest = { version = "^0.11", features = ["blocking", "json"] }
 radiobrowser = { version = "^0.4" }
+clap-verbosity-flag = "2.0.0"
+env_logger = "0.10.0"
+log = "0.4.17"
 
 [lib]
 path = "src/lib/lib.rs"

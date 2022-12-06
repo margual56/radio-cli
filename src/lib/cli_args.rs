@@ -52,8 +52,8 @@ pub struct Cli {
     pub list_countries: bool,
 
     /// Show extra info
-    #[structopt(short, long, help = "Show extra information.")]
-    pub verbose: bool,
+    #[clap(flatten)]
+    pub verbose: clap_verbosity_flag::Verbosity,
 
     /// Show debug info
     #[structopt(short, long)]
