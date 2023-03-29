@@ -1,8 +1,41 @@
 use std::error::Error;
 
 use crate::{station::Station, Config};
-use inquire::{error::InquireError, Text};
+use inquire::{error::InquireError, Text, Autocomplete};
 use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, ApiStation, StationOrder};
+
+#[derive(Debug, Clone)]
+pub struct Stations {
+    stations: Vec<ApiStation>,
+}
+
+impl Autocomplete for Stations {
+    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
+        let suggestions: Vec<String> = self
+            .stations
+            .iter()
+            .filter_map(|station| {
+                if station.name.to_lowercase().contains(&input.to_lowercase()) {
+                    Some(station.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(suggestions)
+    }
+
+    fn get_completion(
+        &mut self,
+        _input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<inquire::autocompletion::Replacement, inquire::CustomUserError> {
+        match highlighted_suggestion {
+            Some(suggestion) => Ok(Some(suggestion)),
+            None => Err(inquire::CustomUserError::from("No suggestion available")),
+        }
+    }
+}    
 
 pub struct Browser {
     api: RadioBrowserAPI,
@@ -90,13 +123,9 @@ impl Browser {
             .with_placeholder(placeholder)
             // Deprecated: need to change to `with_autosuggester`
             // But for that, ApiStation needs to implement the Clone trait
-            // .with_suggester(&|s: &str| {
-            //     self.stations
-            //         .iter()
-            //         .filter(|station| station.name.contains(s) || station.tags.contains(s))
-            //         .map(|station| String::from(&station.name))
-            //         .collect()
-            // })
+            .with_autocomplete(Stations {
+                stations: self.stations.clone(),
+            })
             .with_page_size(max_lines)
             .prompt()
     }

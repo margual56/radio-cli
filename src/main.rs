@@ -158,11 +158,16 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
         .output()
         .expect("Failed to execute command");
 
-    std::io::stdout().write_all(&output.stdout).unwrap();
-    std::io::stderr().write_all(&output.stderr).unwrap();
+    if !output.status.success() {
+        eprintln!("mpv error: {:?}", output.status);
+        std::io::stderr().write_all(&output.stderr).unwrap();
+    } else {
+        std::io::stdout().write_all(&output.stdout).unwrap();
+    }
 
     output.status
 }
+
 
 fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
     let mut internet = false;
