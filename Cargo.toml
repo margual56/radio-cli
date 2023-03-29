@@ -2,7 +2,7 @@
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "A simple radio cli for listening to your favourite streams from the console"
 name = "radio-cli"
-version = "2.1.2"
+version = "2.2.0"
 edition = "2021"
 homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
@@ -13,14 +13,19 @@ depends = ["mpv"]
 optdepends = ["youtube-dl"]
 
 [dependencies]
-clap = { version = "3.1.15", features = ["derive", "clap_derive"] }
-serde = { version="^1.0", features = ["derive"] }
-serde_json = { version = "^1.0", default-features = false, features = ["alloc"] }
-colored = "2"
-xdg = "2.4.1" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
-inquire = "0.2.1"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-radiobrowser = { version = "0.4.0"}
+clap = { version = "^4", features = ["derive", "clap_derive"] }
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = { version = "^1.0", default-features = false, features = [
+    "alloc",
+] }
+colored = "^2"
+xdg = "^2.4" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
+inquire = "0.6.0"
+reqwest = { version = "^0.11", features = ["blocking", "json"] }
+radiobrowser = { git = "https://gitlab.com/margual56/radiobrowser-lib-rust.git" }
+clap-verbosity-flag = "2.0.0"
+env_logger = "0.10.0"
+log = "0.4.17"
 
 [lib]
 path = "src/lib/lib.rs"
