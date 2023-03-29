@@ -1321,7 +1321,7 @@ dependencies = [
 
 [[package]]
 name = "radio-cli"
-version = "2.1.2"
+version = "2.2.0"
 dependencies = [
  "clap",
  "clap-verbosity-flag",

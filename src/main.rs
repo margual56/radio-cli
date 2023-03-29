@@ -168,7 +168,6 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     output.status
 }
 
-
 fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
     let mut internet = false;
 

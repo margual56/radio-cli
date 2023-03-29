@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use crate::{station::Station, Config};
-use inquire::{error::InquireError, Text, Autocomplete};
+use inquire::{error::InquireError, Autocomplete, Text};
 use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, ApiStation, StationOrder};
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ impl Autocomplete for Stations {
             None => Err(inquire::CustomUserError::from("No suggestion available")),
         }
     }
-}    
+}
 
 pub struct Browser {
     api: RadioBrowserAPI,
