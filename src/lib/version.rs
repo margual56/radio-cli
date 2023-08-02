@@ -18,13 +18,13 @@ impl Display for Version {
 impl Version {
     pub fn new(major: u32, minor: u32, patch: u32) -> Version {
         Version {
-            major: major,
-            minor: minor,
-            patch: patch,
+            major,
+            minor,
+            patch,
         }
     }
     pub fn from(v: String) -> Option<Version> {
-        let nums: Vec<&str> = v.split(".").collect();
+        let nums: Vec<&str> = v.split('.').collect();
 
         if nums.len() < 3 {}
 
@@ -66,9 +66,9 @@ impl Version {
         };
 
         Some(Version {
-            major: major,
-            minor: minor,
-            patch: patch,
+            major,
+            minor,
+            patch,
         })
     }
 }

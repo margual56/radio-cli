@@ -79,7 +79,7 @@ fn main() {
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
-    if let None = config.country_code {
+    if config.country_code.is_none() {
         warn!("\n{} {}", "Warning!".yellow().bold(), 
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
         info!(
@@ -209,13 +209,7 @@ fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
                 }
             };
 
-            (
-                Station {
-                    station: String::from(x),
-                    url,
-                },
-                internet,
-            )
+            (Station { station: x, url }, internet)
         }
 
         // Otherwise
