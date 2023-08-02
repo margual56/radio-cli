@@ -44,7 +44,7 @@ impl Config {
     }
 
     fn load(file: PathBuf) -> Result<Config, ConfigError> {
-        let mut config_file = match File::open(file.to_path_buf()) {
+        let mut config_file = match File::open(&file) {
             Ok(x) => x,
             Err(error) => {
                 return Err(ConfigError {
@@ -80,7 +80,7 @@ impl Config {
             Err(error) => {
                 return Err(ConfigError {
                     code: ConfigErrorCode::ParseError,
-                    message: format!("Couldn't parse config"),
+                    message: "Couldn't parse config".to_string(),
                     extra: format!("{:?}", error),
                 })
             }
@@ -151,20 +151,18 @@ impl Config {
             stations.push(s.station.clone());
         }
 
-        return stations;
+        stations
     }
 
     /// Prompts the user to select a station.
     /// Returns a station and if the station was taken from the internet.
     pub fn prompt(self) -> Result<(Station, bool), InquireError> {
-        let res: Result<Station, InquireError>;
-
         let max_lines: usize = match self.max_lines {
             Some(x) => x,
             None => Select::<Station>::DEFAULT_PAGE_SIZE,
         };
 
-        res = Select::new(&"Select a station to play:".bold(), self.data.clone())
+        let res = Select::new(&"Select a station to play:".bold(), self.data.clone())
             .with_page_size(max_lines)
             .prompt();
 
@@ -192,7 +190,7 @@ impl Config {
             Err(e) => return Err(e),
         };
 
-        return Ok((station, internet));
+        Ok((station, internet))
     }
 }
 
