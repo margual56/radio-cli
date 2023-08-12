@@ -54,7 +54,7 @@ fn main() {
         Err(error) => {
             debug!("{:?}", error);
             error!("{}", error);
-            info!("{}", "Try pasing the debug flag (-vvv). ".yellow());
+            info!("{}", "Try passing the debug flag (-vvv). ".yellow());
 
             info!(
                 "{}",
