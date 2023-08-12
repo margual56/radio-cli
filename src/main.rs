@@ -1,9 +1,11 @@
 use clap::Parser;
 use colored::*;
+use inquire::{InquireError, Select};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{browser::Browser, perror, Cli, Config, ConfigError, Station, Version};
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::rc::Rc;
 
 fn main() {
     let version = match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
@@ -61,6 +63,7 @@ fn main() {
             std::process::exit(1);
         }
     };
+    let config = Rc::new(config);
 
     debug!(
         "{} {}",
@@ -95,47 +98,59 @@ fn main() {
         );
     }
 
-    let station = match args.url {
-        None => {
-            let (station, internet) = get_station(args.station, config);
+    let mut url = args.url;
+    let mut station_arg = args.station;
+    loop {
+        let station = match url {
+            None => {
+                let (station, internet) = get_station(station_arg, config.clone());
 
-            print!("Playing {}", station.station.green());
+                print!("Playing {}", station.station.green());
 
-            if internet {
-                println!(" ({})", station.url.yellow().italic());
-            } else {
-                println!();
+                if internet {
+                    println!(" ({})", station.url.yellow().italic());
+                } else {
+                    println!();
+                }
+
+                station
             }
 
-            station
-        }
+            Some(x) => {
+                println!("Playing url '{}'", x.blue());
 
-        Some(x) => {
-            println!("Playing url '{}'", x.blue());
-
-            Station {
-                station: String::from("URL"),
-                url: x,
+                Station {
+                    station: String::from("URL"),
+                    url: x,
+                }
             }
+        };
+
+        // Don't play the same station again when returning to the browser
+        url = None;
+        station_arg = None;
+
+        println!(
+            "{}",
+            "Info: press 'q' to stop playing this station"
+                .italic()
+                .bright_black()
+        );
+
+        let output_status = run_mpv(station, args.show_video);
+        if !output_status.success() {
+            perror(format!("mpv {}", output_status).as_str());
+
+            if !log_enabled!(log::Level::Info) {
+                println!(
+                    "{}: {}",
+                    "Hint".italic().bold(),
+                    "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
+                );
+            }
+
+            std::process::exit(2);
         }
-    };
-
-    println!("{}", "Info: press 'q' to exit".italic().bright_black());
-
-    let output_status = run_mpv(station, args.show_video);
-
-    if !output_status.success() {
-        perror(format!("mpv {}", output_status).as_str());
-
-        if !log_enabled!(log::Level::Info) {
-            println!(
-                "{}: {}",
-                "Hint".italic().bold(),
-                "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
-            );
-        }
-
-        std::process::exit(2);
     }
 }
 
@@ -168,13 +183,13 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     output.status
 }
 
-fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
+fn get_station(station: Option<String>, config: Rc<Config>) -> (Station, bool) {
     let mut internet = false;
 
     match station {
         // If the station name is passed as an argument:
         Some(x) => {
-            let url = match config.clone().get_url_for(&x) {
+            let url = match config.get_url_for(&x) {
                 Some(u) => u,
                 None => {
                     println!(
@@ -215,7 +230,7 @@ fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
         // Otherwise
         None => {
             // And let the user choose one
-            match config.clone().prompt() {
+            match prompt(config) {
                 Ok((s, b)) => (s, b),
                 Err(error) => {
                     println!("\n\t{}", "Bye!".bold().green());
@@ -227,4 +242,43 @@ fn get_station(station: Option<String>, config: Config) -> (Station, bool) {
             }
         }
     }
+}
+
+/// Prompts the user to select a station.
+/// Returns a station and if the station was taken from the internet.
+pub fn prompt(config: Rc<Config>) -> Result<(Station, bool), InquireError> {
+    let max_lines: usize = match config.max_lines {
+        Some(x) => x,
+        None => Select::<Station>::DEFAULT_PAGE_SIZE,
+    };
+
+    let res = Select::new(&"Select a station to play:".bold(), config.data.clone())
+        .with_page_size(max_lines)
+        .prompt();
+
+    let internet: bool;
+    let station: Station = match res {
+        Ok(s) => {
+            if s.station.eq("Other") {
+                internet = true;
+                let result = Browser::new(config);
+
+                let brow = match result {
+                    Ok(b) => b,
+                    Err(_e) => return Err(InquireError::OperationInterrupted),
+                };
+
+                match brow.prompt() {
+                    Ok(r) => r,
+                    Err(e) => return Err(e),
+                }
+            } else {
+                internet = false;
+                s
+            }
+        }
+        Err(e) => return Err(e),
+    };
+
+    Ok((station, internet))
 }

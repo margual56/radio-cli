@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::rc::Rc;
 
 use crate::{station::Station, Config};
 use inquire::{error::InquireError, Autocomplete, Text};
@@ -39,12 +40,12 @@ impl Autocomplete for Stations {
 
 pub struct Browser {
     api: RadioBrowserAPI,
-    config: Config,
+    config: Rc<Config>,
     stations: Vec<ApiStation>,
 }
 
 impl Browser {
-    pub fn new(config: Config) -> Result<Browser, Box<dyn Error>> {
+    pub fn new(config: Rc<Config>) -> Result<Browser, Box<dyn Error>> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
