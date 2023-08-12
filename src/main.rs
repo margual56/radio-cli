@@ -2,7 +2,10 @@ use clap::Parser;
 use colored::*;
 use inquire::{InquireError, Select};
 use log::{debug, error, info, log_enabled, warn};
-use radio_libs::{browser::Browser, perror, Cli, Config, ConfigError, Station, Version};
+use radio_libs::{
+    browser::{Browser, StationCache},
+    perror, Cli, Config, ConfigError, Station, Version,
+};
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
@@ -100,10 +103,13 @@ fn main() {
 
     let mut url = args.url;
     let mut station_arg = args.station;
+    let mut cached_stations = None;
     loop {
         let station = match url {
             None => {
-                let (station, internet) = get_station(station_arg, config.clone());
+                let (station, internet, updated_cached_stations) =
+                    get_station(station_arg, config.clone(), cached_stations.clone());
+                cached_stations = updated_cached_stations;
 
                 print!("Playing {}", station.station.green());
 
@@ -183,14 +189,18 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     output.status
 }
 
-fn get_station(station: Option<String>, config: Rc<Config>) -> (Station, bool) {
+fn get_station(
+    station: Option<String>,
+    config: Rc<Config>,
+    cached_stations: Option<StationCache>,
+) -> (Station, bool, Option<StationCache>) {
     let mut internet = false;
 
     match station {
         // If the station name is passed as an argument:
         Some(x) => {
-            let url = match config.get_url_for(&x) {
-                Some(u) => u,
+            let (url, updated_cached_stations) = match config.get_url_for(&x) {
+                Some(u) => (u, None),
                 None => {
                     println!(
                         "{}",
@@ -201,19 +211,20 @@ fn get_station(station: Option<String>, config: Rc<Config>) -> (Station, bool) {
 
                     internet = true;
 
-                    let brows = match Browser::new(config) {
-                        Ok(b) => b,
-                        Err(e) => {
-                            error!("Could not connect with the API");
+                    let (brows, updated_cached_stations) =
+                        match Browser::new(config, cached_stations) {
+                            Ok(b) => b,
+                            Err(e) => {
+                                error!("Could not connect with the API");
 
-                            debug!("{}", e);
+                                debug!("{}", e);
 
-                            std::process::exit(1);
-                        }
-                    };
+                                std::process::exit(1);
+                            }
+                        };
 
                     match brows.get_station(x.clone()) {
-                        Ok(s) => s.url,
+                        Ok(s) => (s.url, Some(updated_cached_stations)),
                         Err(e) => {
                             error!("This station was not found :(");
                             debug!("{}", e);
@@ -224,14 +235,18 @@ fn get_station(station: Option<String>, config: Rc<Config>) -> (Station, bool) {
                 }
             };
 
-            (Station { station: x, url }, internet)
+            (
+                Station { station: x, url },
+                internet,
+                updated_cached_stations,
+            )
         }
 
         // Otherwise
         None => {
             // And let the user choose one
-            match prompt(config) {
-                Ok((s, b)) => (s, b),
+            match prompt(config, cached_stations) {
+                Ok((s, b, cached)) => (s, b, cached),
                 Err(error) => {
                     println!("\n\t{}", "Bye!".bold().green());
 
@@ -246,7 +261,10 @@ fn get_station(station: Option<String>, config: Rc<Config>) -> (Station, bool) {
 
 /// Prompts the user to select a station.
 /// Returns a station and if the station was taken from the internet.
-pub fn prompt(config: Rc<Config>) -> Result<(Station, bool), InquireError> {
+pub fn prompt(
+    config: Rc<Config>,
+    cached_stations: Option<StationCache>,
+) -> Result<(Station, bool, Option<StationCache>), InquireError> {
     let max_lines: usize = match config.max_lines {
         Some(x) => x,
         None => Select::<Station>::DEFAULT_PAGE_SIZE,
@@ -257,28 +275,28 @@ pub fn prompt(config: Rc<Config>) -> Result<(Station, bool), InquireError> {
         .prompt();
 
     let internet: bool;
-    let station: Station = match res {
+    let (station, updated_cached_stations) = match res {
         Ok(s) => {
             if s.station.eq("Other") {
                 internet = true;
-                let result = Browser::new(config);
+                let result = Browser::new(config, cached_stations);
 
-                let brow = match result {
-                    Ok(b) => b,
+                let (brow, updated_cached_stations) = match result {
+                    Ok((b, updated_cached_stations)) => (b, updated_cached_stations),
                     Err(_e) => return Err(InquireError::OperationInterrupted),
                 };
 
                 match brow.prompt() {
-                    Ok(r) => r,
+                    Ok(r) => (r, Some(updated_cached_stations)),
                     Err(e) => return Err(e),
                 }
             } else {
                 internet = false;
-                s
+                (s, None)
             }
         }
         Err(e) => return Err(e),
     };
 
-    Ok((station, internet))
+    Ok((station, internet, updated_cached_stations))
 }
