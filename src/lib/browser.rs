@@ -1,12 +1,15 @@
 use std::error::Error;
+use std::rc::Rc;
 
 use crate::{station::Station, Config};
 use inquire::{error::InquireError, Autocomplete, Text};
 use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, ApiStation, StationOrder};
 
+pub type StationCache = Rc<Vec<ApiStation>>;
+
 #[derive(Debug, Clone)]
 pub struct Stations {
-    stations: Vec<ApiStation>,
+    stations: StationCache,
 }
 
 impl Autocomplete for Stations {
@@ -39,39 +42,47 @@ impl Autocomplete for Stations {
 
 pub struct Browser {
     api: RadioBrowserAPI,
-    config: Config,
-    stations: Vec<ApiStation>,
+    config: Rc<Config>,
+    stations: StationCache,
 }
 
 impl Browser {
-    pub fn new(config: Config) -> Result<Browser, Box<dyn Error>> {
+    pub fn new(
+        config: Rc<Config>,
+        cached_stations: Option<StationCache>,
+    ) -> Result<(Browser, StationCache), Box<dyn Error>> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
         };
 
-        let stations = if let Some(code) = &config.country_code {
-            match api
-                .get_stations()
-                .countrycode(code)
-                .order(StationOrder::Clickcount)
-                .send()
-            {
-                Ok(s) => s,
-                Err(_e) => Vec::new(),
-            }
-        } else {
-            match api.get_stations().order(StationOrder::Clickcount).send() {
-                Ok(s) => s,
-                Err(_e) => Vec::new(),
-            }
-        };
+        let stations = cached_stations.unwrap_or_else(|| {
+            Rc::new(if let Some(code) = &config.country_code {
+                match api
+                    .get_stations()
+                    .countrycode(code)
+                    .order(StationOrder::Clickcount)
+                    .send()
+                {
+                    Ok(s) => s,
+                    Err(_e) => Vec::new(),
+                }
+            } else {
+                match api.get_stations().order(StationOrder::Clickcount).send() {
+                    Ok(s) => s,
+                    Err(_e) => Vec::new(),
+                }
+            })
+        });
 
-        Ok(Browser {
-            api,
-            config,
+        Ok((
+            Browser {
+                api,
+                config,
+                stations: stations.clone(),
+            },
             stations,
-        })
+        ))
     }
 
     pub fn get_countries() -> Result<Vec<ApiCountry>, Box<dyn Error>> {

@@ -68,7 +68,7 @@ The license is GPLv2
 Don't be surprised if these are not implemented in the end hehe (if there is no interest in the project, certainly not)
 
 - [x] ~Audio (mpv) controls when not in verbose mode~
-- [ ] Loop to selection list when pressing `q` while playing
+- [x] Loop to selection list when pressing `q` while playing
 - [x] ~Some kind of online updating of the list of stations~ _(kind of)_
 - [x] ~Code optimizations/beautification~
 - [x] ~Search international online radios~

@@ -51,6 +51,13 @@ pub struct Cli {
     )]
     pub list_countries: bool,
 
+    /// Flag: --no-station-cache: Don't cache the station list loaded from the internet.
+    #[clap(
+        long = "no-station-cache",
+        help = "Don't cache the station list loaded from the internet."
+    )]
+    pub no_station_cache: bool,
+
     /// Show extra info
     #[clap(flatten)]
     pub verbose: clap_verbosity_flag::Verbosity,
