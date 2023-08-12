@@ -109,7 +109,9 @@ fn main() {
             None => {
                 let (station, internet, updated_cached_stations) =
                     get_station(station_arg, config.clone(), cached_stations.clone());
-                cached_stations = updated_cached_stations;
+                if !args.no_station_cache {
+                    cached_stations = updated_cached_stations;
+                }
 
                 print!("Playing {}", station.station.green());
 
