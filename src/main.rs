@@ -114,6 +114,7 @@ fn main() {
                 }
 
                 print!("Playing {}", station.station.green());
+                print!("\x1B]0;Now playing: {}\x07", station.station);
 
                 if internet {
                     println!(" ({})", station.url.yellow().italic());
