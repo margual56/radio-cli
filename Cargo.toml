@@ -20,12 +20,12 @@ serde_json = { version = "^1.0", default-features = false, features = [
 ] }
 colored = "^2"
 xdg = "^2.5" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
-inquire = "^0.6"
-reqwest = { version = "^0.11", features = ["blocking", "json"] }
-radiobrowser = { git = "https://gitlab.com/margual56/radiobrowser-lib-rust.git" }
-clap-verbosity-flag = "^2.0"
-env_logger = "^0.10"
-log = "^0.4"
+inquire = "^0"
+reqwest = { version = "^0", features = ["blocking", "json"] }
+radiobrowser = { version = "^0", features = ["blocking"] }
+clap-verbosity-flag = "^2"
+env_logger = "^0"
+log = "^0"
 
 [lib]
 path = "src/lib/lib.rs"
