@@ -2,7 +2,7 @@
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "A simple radio cli for listening to your favourite streams from the console"
 name = "radio-cli"
-version = "2.3.0"
+version = "2.3.1"
 edition = "2021"
 homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
