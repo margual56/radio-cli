@@ -180,7 +180,7 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .output()
-        .expect("Failed to execute command");
+        .expect("Failed to execute mpv. Is it installed?");
 
     if !output.status.success() {
         eprintln!("mpv error: {:?}", output.status);
