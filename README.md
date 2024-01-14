@@ -8,6 +8,13 @@ A simple radio CLI written in rust.
 
 [![asciicast](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7.svg)](https://asciinema.org/a/Kt0CP53YO0IWPyUs1p2S45zO7)
 
+### Support:
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0) 
+
+_Note: Untested on MacOS, but it should work_
+
 ### Warning! (**DEPENDENCIES**)
 - *Needed*: `mpv` is called to play the audio/video. (See the [How it works](https://github.com/margual56/radio-cli#how-it-works) section).
 - *Optional dependency*: To play youtube music you need to have `yt-dlp` or `youtube-dl` installed! 
