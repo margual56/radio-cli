@@ -13,7 +13,7 @@ A simple radio CLI written in rust.
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0) 
 
-_Note: Untested on MacOS, but it should work_
+_Note: Untested on MacOS, but it should work... Hell, it should even work on Android. Give it a try!_
 
 ### Warning! (**DEPENDENCIES**)
 - *Needed*: `mpv` is called to play the audio/video. (See the [How it works](https://github.com/margual56/radio-cli#how-it-works) section).
