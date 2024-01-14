@@ -2,7 +2,7 @@
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "A simple radio cli for listening to your favourite streams from the console"
 name = "radio-cli"
-version = "2.3.1"
+version = "2.3.2"
 edition = "2021"
 homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
@@ -19,9 +19,8 @@ serde_json = { version = "^1.0", default-features = false, features = [
     "alloc",
 ] }
 colored = "^2"
-xdg = "^2.5" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
 inquire = "^0"
-reqwest = { version = "^0", features = ["blocking", "json"] }
+directories = "^5"
 radiobrowser = { version = "^0", features = ["blocking"] }
 clap-verbosity-flag = "^2"
 env_logger = "^0"

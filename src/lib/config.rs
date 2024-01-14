@@ -1,9 +1,7 @@
-extern crate xdg;
-
 use crate::errors::{ConfigError, ConfigErrorCode};
-use crate::perror;
 use crate::station::Station;
 use crate::version::Version;
+use directories::ProjectDirs;
 
 use colored::*;
 use serde::de::{Deserializer, Error as SeError, Visitor};
@@ -13,7 +11,11 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
+const DEFAULT_CONFIG: &str = include_str!("../../config.json");
+const PROJECT_QUALIFIER: &str = "org";
+const PROJECT_ORGANIZATION: &str = "margual56";
+const PROJECT_NAME: &str = "radio-cli";
+
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
@@ -29,11 +31,7 @@ pub struct Config {
 
 impl Config {
     pub fn load_default() -> Result<Config, ConfigError> {
-        // Load config.json from $XDG_CONFIG_HOME/radio-cli
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-        let config_file = Config::load_config(xdg_dirs);
-
-        Config::load(config_file)
+        Config::load(Config::get_config_file())
     }
 
     pub fn load_from_file(path: PathBuf) -> Result<Config, ConfigError> {
@@ -86,49 +84,29 @@ impl Config {
         Ok(data)
     }
 
-    fn load_config(dir: xdg::BaseDirectories) -> PathBuf {
-        match dir.find_config_file("config.json") {
-            None => {
-                // Get the name of the directory
-                let tmp = dir.get_config_file("");
-                let dir_name: &str = match tmp.to_str() {
-                    Some(x) => x,
-                    None => "??",
-                };
-
-                // Print an error message
-                let msg = format!("The config file does not exist in \"{}\"", dir_name);
-                perror(msg.as_str());
-
-                // Download the file
-                println!("\tLoading file from {}...", _CONFIG_URL.italic());
-                let resp = reqwest::blocking::get(_CONFIG_URL).expect("Request failed");
-                let body = resp.text().expect("Body invalid");
+    fn get_config_file() -> PathBuf {
+        let binding = ProjectDirs::from(PROJECT_QUALIFIER, PROJECT_ORGANIZATION, PROJECT_NAME).expect("Error finding Home directory");
+        let dir = binding.config_local_dir();
+        
+        if !dir.exists() || !dir.join("config.json").exists() {
+                println!("The config does not exist, writing default...");
+                std::fs::create_dir_all(dir).expect("Could not create config folders");
 
                 // Create the new config file
-                let file_ref = dir
-                    .place_config_file("config.json")
-                    .expect("Could not create config file");
-
-                println!("\tDone loading!");
-
-                println!(
-                    "\tTrying to open {} to write the config...",
-                    file_ref.to_str().expect("msg: &str").bold()
-                );
-
-                let mut file = File::create(file_ref.clone()).unwrap(); // This is write-only!!
-                file.write_all(body.as_bytes())
+                let mut file = File::create(dir.join("config.json")).expect("Could not create config file");
+                file.write_all(DEFAULT_CONFIG.as_bytes())
                     .expect("Could not write to config");
+                file.flush().expect("Error while writing to the config file");
 
                 drop(file); // So we close the file to be able to read it
 
-                println!("\tFinished writing config. Enjoy! :)\n\n");
-
-                file_ref
+                println!("\tFinished writing config.");
+                println!("\tYou can find the config at: {}", format!("{:#?}", dir.as_os_str()).bold().yellow());
+                println!("\tIn it you can add your favourite stations for easy access, and other settings too such as the country to filter the stations");
+                println!("{}", "\tEnjoy! :)".bold().bright_green());
             }
-            Some(x) => x,
-        }
+        
+        return dir.join("config.json");
     }
 
     pub fn get_url_for(&self, station_name: &str) -> Option<String> {

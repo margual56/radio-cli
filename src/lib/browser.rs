@@ -132,8 +132,6 @@ impl Browser {
 
         Text::new(message)
             .with_placeholder(placeholder)
-            // Deprecated: need to change to `with_autosuggester`
-            // But for that, ApiStation needs to implement the Clone trait
             .with_autocomplete(Stations {
                 stations: self.stations.clone(),
             })
