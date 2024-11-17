@@ -4,10 +4,6 @@
 	"country": "ES",
 	"data": [
 		{
-			"station": "80s 90s Super Pop Hits",
-			"url": "https://streaming.shoutcast.com/80s-90s-super"
-		},
-		{
 			"station": "lofi",
 			"url": "https://www.youtube.com/live/jfKfPfyJRdk?si=WDl-XdfuhxBfe6XN"
 		}
