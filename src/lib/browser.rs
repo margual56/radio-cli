@@ -1,9 +1,9 @@
 use std::error::Error;
 use std::rc::Rc;
 
-use crate::{station::Station, Config};
-use inquire::{error::InquireError, Autocomplete, Text};
-use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, ApiStation, StationOrder};
+use crate::{Config, station::Station};
+use inquire::{Autocomplete, Text, error::InquireError};
+use radiobrowser::{ApiCountry, ApiStation, StationOrder, blocking::RadioBrowserAPI};
 
 pub type StationCache = Rc<Vec<ApiStation>>;
 

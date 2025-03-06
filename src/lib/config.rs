@@ -6,8 +6,8 @@ use crate::station::Station;
 use crate::version::Version;
 
 use colored::*;
-use serde::de::{Deserializer, Error as SeError, Visitor};
 use serde::Deserialize;
+use serde::de::{Deserializer, Error as SeError, Visitor};
 use std::fmt::{Formatter, Result as ResultFmt};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -48,7 +48,7 @@ impl Config {
                     code: ConfigErrorCode::OpenError,
                     message: format!("Could not open the file {:?}", file),
                     extra: format!("{:?}", error),
-                })
+                });
             }
         };
 
@@ -61,7 +61,7 @@ impl Config {
                     code: ConfigErrorCode::ReadError,
                     message: format!("Couldn't read the file {:?}", file),
                     extra: format!("{:?}", error),
-                })
+                });
             }
         }
 
@@ -79,7 +79,7 @@ impl Config {
                     code: ConfigErrorCode::ParseError,
                     message: "Couldn't parse config".to_string(),
                     extra: format!("{:?}", error),
-                })
+                });
             }
         };
 

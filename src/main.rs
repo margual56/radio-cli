@@ -3,8 +3,9 @@ use colored::*;
 use inquire::{InquireError, Select};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
+    Cli, Config, ConfigError, Station, Version,
     browser::{Browser, StationCache},
-    perror, Cli, Config, ConfigError, Station, Version,
+    perror,
 };
 use std::io::Write;
 use std::process::{Command, Stdio};
