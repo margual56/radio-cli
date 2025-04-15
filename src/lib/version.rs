@@ -1,4 +1,5 @@
 use colored::*;
+use log::error;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as ResultFmt};
 
@@ -12,6 +13,22 @@ pub struct Version {
 impl Display for Version {
     fn fmt(&self, f: &mut Formatter<'_>) -> ResultFmt {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
+            Some(v) => v,
+            None => {
+                error!("There was an error parsing the program version");
+                Version {
+                    major: 0,
+                    minor: 0,
+                    patch: 0,
+                }
+            }
+        }
     }
 }
 

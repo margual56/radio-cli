@@ -1,9 +1,8 @@
-use std::error::Error;
 use std::rc::Rc;
 
 use crate::{Config, station::Station};
 use inquire::{Autocomplete, Text, error::InquireError};
-use radiobrowser::{ApiCountry, ApiStation, StationOrder, blocking::RadioBrowserAPI};
+use radiobrowser::{ApiCountry, ApiStation, RbError, StationOrder, blocking::RadioBrowserAPI};
 
 pub type StationCache = Rc<Vec<ApiStation>>;
 
@@ -50,7 +49,7 @@ impl Browser {
     pub fn new(
         config: Rc<Config>,
         cached_stations: Option<StationCache>,
-    ) -> Result<(Browser, StationCache), Box<dyn Error>> {
+    ) -> Result<(Browser, StationCache), RbError> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
@@ -85,7 +84,7 @@ impl Browser {
         ))
     }
 
-    pub fn get_countries() -> Result<Vec<ApiCountry>, Box<dyn Error>> {
+    pub fn get_countries() -> Result<Vec<ApiCountry>, RbError> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
@@ -98,10 +97,7 @@ impl Browser {
         if let Some(code) = self.config.country_code.clone() {
             return match self.api.get_stations().name(name).countrycode(code).send() {
                 Ok(s) => match s.get(0) {
-                    Some(x) => Ok(Station {
-                        station: x.name.clone(),
-                        url: x.url.clone(),
-                    }),
+                    Some(x) => Ok(Station::from(x.clone())),
                     None => Err(InquireError::InvalidConfiguration(
                         "Radio station does not exist".to_string(),
                     )),
@@ -111,10 +107,7 @@ impl Browser {
         } else {
             return match self.api.get_stations().name(name).send() {
                 Ok(s) => match s.get(0) {
-                    Some(x) => Ok(Station {
-                        station: x.name.clone(),
-                        url: x.url.clone(),
-                    }),
+                    Some(x) => Ok(Station::from(x.clone())),
                     None => Err(InquireError::InvalidConfiguration(
                         "Radio station does not exist".to_string(),
                     )),

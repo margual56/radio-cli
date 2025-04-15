@@ -25,8 +25,6 @@ pub struct Config {
     pub country_code: Option<String>,
 
     pub data: Vec<Station>,
-
-    pub cache: Vec<Station>,
 }
 
 impl Config {
@@ -69,10 +67,8 @@ impl Config {
 
         let data: Config = match serde_json::from_str::<Config>(&config) {
             Ok(mut x) => {
-                x.data.push(Station {
-                    station: "Other".to_string(),
-                    url: "".to_string(),
-                });
+                x.data
+                    .push(Station::new("Other".to_string(), "".to_string()));
 
                 x
             }
@@ -135,8 +131,8 @@ impl Config {
 
     pub fn get_url_for(&self, station_name: &str) -> Option<String> {
         for s in self.data.iter() {
-            if s.station.eq(station_name) {
-                return Some(s.url.clone());
+            if s.0.name.eq(station_name) {
+                return Some(s.0.url.clone());
             }
         }
 
@@ -147,7 +143,7 @@ impl Config {
         let mut stations: Vec<String> = Vec::new();
 
         for s in self.data.iter() {
-            stations.push(s.station.clone());
+            stations.push(s.0.name.clone());
         }
 
         stations

@@ -3,7 +3,7 @@ use colored::*;
 use inquire::{InquireError, Select};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
-    Cli, Config, ConfigError, Station, Subcommands, Version,
+    Cache, Cli, Config, ConfigError, Station, Subcommands, Version,
     browser::{Browser, StationCache},
     perror,
 };
@@ -90,23 +90,26 @@ fn main() {
         );
     }
 
-    let mut cached_stations = None;
+    let mut cached_stations = Cache::load();
     match args.command {
         Subcommands::Play { station, url } => {
             play(url, station, &mut cached_stations, args.show_video, config);
         }
         Subcommands::Search { name } => {
             let (station, internet, updated_cached_stations) =
-                get_station(name, config.clone(), cached_stations.clone());
+                get_station(name, config.clone(), &mut cached_stations);
+
             if !args.no_station_cache {
-                cached_stations = updated_cached_stations;
+                if let Some(cache) = updated_cached_stations {
+                    cached_stations.insert_rc(cache);
+                }
             }
 
-            print!("Playing {}", station.station.green());
-            print!("\x1B]0;Now playing: {}\x07", station.station);
+            print!("Playing {}", station.0.name.green());
+            print!("\x1B]0;Now playing: {}\x07", station.0.name);
 
             if internet {
-                println!(" ({})", station.url.yellow().italic());
+                println!(" ({})", station.0.url.yellow().italic());
             } else {
                 println!();
             }
@@ -149,11 +152,15 @@ fn main() {
             std::process::exit(1);
         }
     };
+
+    if let Err(e) = cached_stations.save() {
+        error!("{}", format!("{}", e).red());
+    }
 }
 
 fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     let mut mpv = Command::new("mpv");
-    let mut mpv_args: Vec<String> = [station.url].to_vec();
+    let mut mpv_args: Vec<String> = [station.0.url].to_vec();
 
     if !show_video {
         mpv_args.push(String::from("--no-video"));
@@ -183,7 +190,7 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
 fn get_station(
     station: Option<String>,
     config: Rc<Config>,
-    cached_stations: Option<StationCache>,
+    cached_stations: &mut Cache,
 ) -> (Station, bool, Option<StationCache>) {
     let mut internet = false;
 
@@ -203,7 +210,7 @@ fn get_station(
                     internet = true;
 
                     let (brows, updated_cached_stations) =
-                        match Browser::new(config, cached_stations) {
+                        match Browser::new(config, cached_stations.get_cache()) {
                             Ok(b) => b,
                             Err(e) => {
                                 error!("Could not connect with the API");
@@ -215,7 +222,7 @@ fn get_station(
                         };
 
                     match brows.get_station(x.clone()) {
-                        Ok(s) => (s.url, Some(updated_cached_stations)),
+                        Ok(s) => (s.0.url, Some(updated_cached_stations)),
                         Err(e) => {
                             error!("This station was not found :(");
                             debug!("{}", e);
@@ -226,17 +233,13 @@ fn get_station(
                 }
             };
 
-            (
-                Station { station: x, url },
-                internet,
-                updated_cached_stations,
-            )
+            (Station::new(x, url), internet, updated_cached_stations)
         }
 
         // Otherwise
         None => {
             // And let the user choose one
-            match prompt(config, cached_stations) {
+            match prompt(config, cached_stations.get_cache()) {
                 Ok((s, b, cached)) => (s, b, cached),
                 Err(error) => {
                     println!("\n\t{}", "Bye!".bold().green());
@@ -268,7 +271,7 @@ pub fn prompt(
     let internet: bool;
     let (station, updated_cached_stations) = match res {
         Ok(s) => {
-            if s.station.eq("Other") {
+            if s.0.name.eq("Other") {
                 internet = true;
                 let result = Browser::new(config, cached_stations);
 
@@ -295,7 +298,7 @@ pub fn prompt(
 fn play(
     url: Option<String>,
     station_name: Option<String>,
-    cached_stations: &mut Option<StationCache>,
+    cached_stations: &mut Cache,
     show_video: bool,
     config: Rc<Config>,
 ) {
@@ -303,20 +306,17 @@ fn play(
         Some(url) => {
             println!("Playing url '{}'", url.blue());
 
-            Some(Station {
-                station: String::from("URL"),
-                url,
-            })
+            Some(Station::new(String::from("URL"), url))
         }
         None => match station_name {
             Some(station) => {
                 let (station_struct, _, updated_cached_stations) =
-                    get_station(Some(station), config.clone(), None);
+                    get_station(Some(station), config.clone(), cached_stations);
                 if let Some(updated_stations) = updated_cached_stations {
-                    _ = cached_stations.insert(updated_stations.clone());
+                    _ = cached_stations.insert(updated_stations.to_vec());
                 }
 
-                println!("Playing {}", station_struct.station.blue());
+                println!("Playing {}", station_struct.0.name.blue());
 
                 Some(station_struct)
             }

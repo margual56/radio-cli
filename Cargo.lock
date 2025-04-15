@@ -1699,8 +1699,7 @@ dependencies = [
 [[package]]
 name = "radiobrowser"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "763ad5f847e3d2e3221dac4e87370297a970e3f9eb8f2760b915001b9c79023b"
+source = "git+https://gitlab.com/radiobrowser/radiobrowser-lib-rust.git?rev=5270f8277b0ce7f2a868504fd6e047ca418411fb#5270f8277b0ce7f2a868504fd6e047ca418411fb"
 dependencies = [
  "async-std",
  "async-std-resolver",
@@ -1709,6 +1708,7 @@ dependencies = [
  "rand",
  "reqwest 0.11.27",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
