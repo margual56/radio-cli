@@ -124,7 +124,7 @@ impl Browser {
         }
     }
 
-    fn search_station(&self, message: &str, placeholder: &str) -> Result<String, InquireError> {
+    pub fn search_station(&self, message: &str, placeholder: &str) -> Result<String, InquireError> {
         let max_lines = match self.config.max_lines {
             Some(x) => x,
             None => Text::DEFAULT_PAGE_SIZE,

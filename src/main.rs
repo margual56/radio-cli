@@ -3,7 +3,7 @@ use colored::*;
 use inquire::{InquireError, Select};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
-    Cli, Config, ConfigError, Station, Version,
+    Cli, Config, ConfigError, Station, Subcommands, Version,
     browser::{Browser, StationCache},
     perror,
 };
@@ -25,18 +25,6 @@ fn main() {
     env_logger::Builder::new()
         .filter_level(args.verbose.log_level_filter())
         .init();
-
-    if args.list_countries {
-        if let Ok(countries) = Browser::get_countries() {
-            for country in countries {
-                println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
-            }
-        } else {
-            error!("Could not connect to the server, please check your connection.");
-        }
-
-        std::process::exit(0);
-    }
 
     // Parse the config file
     let config_result: Result<Config, ConfigError> = match args.config {
@@ -82,12 +70,12 @@ fn main() {
     );
 
     if config.config_version.major < version.major {
-        warn!("\n{} {}\n", "Warning!".yellow().bold(), 
+        warn!("\n{} {}\n", "Warning!".yellow().bold(),
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
     if config.country_code.is_none() {
-        warn!("\n{} {}", "Warning!".yellow().bold(), 
+        warn!("\n{} {}", "Warning!".yellow().bold(),
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
         info!(
             "{} {} {}\n",
@@ -102,66 +90,65 @@ fn main() {
         );
     }
 
-    let mut url = args.url;
-    let mut station_arg = args.station;
     let mut cached_stations = None;
-    loop {
-        let station = match url {
-            None => {
-                let (station, internet, updated_cached_stations) =
-                    get_station(station_arg, config.clone(), cached_stations.clone());
-                if !args.no_station_cache {
-                    cached_stations = updated_cached_stations;
-                }
-
-                print!("Playing {}", station.station.green());
-                print!("\x1B]0;Now playing: {}\x07", station.station);
-
-                if internet {
-                    println!(" ({})", station.url.yellow().italic());
-                } else {
-                    println!();
-                }
-
-                station
-            }
-
-            Some(x) => {
-                println!("Playing url '{}'", x.blue());
-
-                Station {
-                    station: String::from("URL"),
-                    url: x,
-                }
-            }
-        };
-
-        // Don't play the same station again when returning to the browser
-        url = None;
-        station_arg = None;
-
-        println!(
-            "{}",
-            "Info: press 'q' to stop playing this station"
-                .italic()
-                .bright_black()
-        );
-
-        let output_status = run_mpv(station, args.show_video);
-        if !output_status.success() {
-            perror(format!("mpv {}", output_status).as_str());
-
-            if !log_enabled!(log::Level::Info) {
-                println!(
-                    "{}: {}",
-                    "Hint".italic().bold(),
-                    "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
-                );
-            }
-
-            std::process::exit(2);
+    match args.command {
+        Subcommands::Play { station, url } => {
+            play(url, station, &mut cached_stations, args.show_video, config);
         }
-    }
+        Subcommands::Search { name } => {
+            let (station, internet, updated_cached_stations) =
+                get_station(name, config.clone(), cached_stations.clone());
+            if !args.no_station_cache {
+                cached_stations = updated_cached_stations;
+            }
+
+            print!("Playing {}", station.station.green());
+            print!("\x1B]0;Now playing: {}\x07", station.station);
+
+            if internet {
+                println!(" ({})", station.url.yellow().italic());
+            } else {
+                println!();
+            }
+
+            println!(
+                "{}",
+                "Info: press 'q' to stop playing this station"
+                    .italic()
+                    .bright_black()
+            );
+
+            let output_status = run_mpv(station, args.show_video);
+            if !output_status.success() {
+                perror(format!("mpv {}", output_status).as_str());
+
+                if !log_enabled!(log::Level::Info) {
+                    println!(
+                        "{}: {}",
+                        "Hint".italic().bold(),
+                        "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
+                    );
+                }
+
+                std::process::exit(2);
+            }
+        }
+        Subcommands::ListCountries => {
+            if let Ok(countries) = Browser::get_countries() {
+                for country in countries {
+                    println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
+                }
+            } else {
+                error!("Could not connect to the server, please check your connection.");
+            }
+
+            std::process::exit(0);
+        }
+        _ => {
+            error!("No station selected");
+            std::process::exit(1);
+        }
+    };
 }
 
 fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
@@ -303,4 +290,64 @@ pub fn prompt(
     };
 
     Ok((station, internet, updated_cached_stations))
+}
+
+fn play(
+    url: Option<String>,
+    station_name: Option<String>,
+    cached_stations: &mut Option<StationCache>,
+    show_video: bool,
+    config: Rc<Config>,
+) {
+    let station = match url {
+        Some(url) => {
+            println!("Playing url '{}'", url.blue());
+
+            Some(Station {
+                station: String::from("URL"),
+                url,
+            })
+        }
+        None => match station_name {
+            Some(station) => {
+                let (station_struct, _, updated_cached_stations) =
+                    get_station(Some(station), config.clone(), None);
+                if let Some(updated_stations) = updated_cached_stations {
+                    _ = cached_stations.insert(updated_stations.clone());
+                }
+
+                println!("Playing {}", station_struct.station.blue());
+
+                Some(station_struct)
+            }
+            None => None,
+        },
+    };
+
+    if let Some(station) = station {
+        println!(
+            "{}",
+            "Info: press 'q' to stop playing this station"
+                .italic()
+                .bright_black()
+        );
+
+        let output_status = run_mpv(station, show_video);
+        if !output_status.success() {
+            perror(format!("mpv {}", output_status).as_str());
+
+            if !log_enabled!(log::Level::Info) {
+                println!(
+                    "{}: {}",
+                    "Hint".italic().bold(),
+                    "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
+                );
+            }
+
+            std::process::exit(2);
+        }
+    } else {
+        error!("URL or station not found");
+        std::process::exit(2);
+    }
 }

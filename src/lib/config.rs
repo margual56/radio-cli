@@ -25,6 +25,8 @@ pub struct Config {
     pub country_code: Option<String>,
 
     pub data: Vec<Station>,
+
+    pub cache: Vec<Station>,
 }
 
 impl Config {

@@ -1,5 +1,5 @@
-use serde::Deserialize;
-#[derive(Deserialize, Debug, Clone)]
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Station {
     pub station: String,
     pub url: String,

@@ -1,8 +1,8 @@
 use colored::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as ResultFmt};
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Version {
     pub major: u32,
     pub minor: u32,
