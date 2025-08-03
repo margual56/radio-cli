@@ -6,8 +6,8 @@ use crate::station::Station;
 use crate::version::Version;
 
 use colored::*;
-use serde::Deserialize;
 use serde::de::{Deserializer, Error as SeError, Visitor};
+use serde::{Deserialize, Serialize, Serializer};
 use std::fmt::{Formatter, Result as ResultFmt};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     #[serde(deserialize_with = "deserialize_version")]
     pub config_version: Version,
@@ -24,6 +24,9 @@ pub struct Config {
     #[serde(alias = "country")]
     pub country_code: Option<String>,
 
+    #[serde(skip)]
+    pub config_path: Option<PathBuf>,
+
     pub data: Vec<Station>,
 }
 
@@ -31,13 +34,17 @@ impl Config {
     pub fn load_default() -> Result<Config, ConfigError> {
         // Load config.json from $XDG_CONFIG_HOME/radio-cli
         let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-        let config_file = Config::load_config(xdg_dirs);
+        let config_file = Config::get_config_path(xdg_dirs);
 
-        Config::load(config_file)
+        let mut config = Config::load(config_file.clone())?;
+        config.config_path = Some(config_file);
+        Ok(config)
     }
 
     pub fn load_from_file(path: PathBuf) -> Result<Config, ConfigError> {
-        Config::load(path)
+        let mut config = Config::load(path.clone())?;
+        config.config_path = Some(path);
+        Ok(config)
     }
 
     fn load(file: PathBuf) -> Result<Config, ConfigError> {
@@ -84,7 +91,11 @@ impl Config {
         Ok(data)
     }
 
-    fn load_config(dir: xdg::BaseDirectories) -> PathBuf {
+    /// Get the XDG path for the config file
+    /// Creates the file if it doesn't exist
+    ///
+    /// Returns the path to the config file
+    fn get_config_path(dir: xdg::BaseDirectories) -> PathBuf {
         match dir.find_config_file("config.json") {
             None => {
                 // Get the name of the directory
@@ -129,6 +140,21 @@ impl Config {
         }
     }
 
+    pub fn save(&self) {
+        let path = match &self.config_path {
+            Some(p) => p,
+            None => {
+                let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
+                &Config::get_config_path(xdg_dirs)
+            }
+        };
+        let mut file = File::create(path).unwrap(); // This is write-only!!
+        file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
+            .expect("Could not write to config");
+
+        drop(file); // So we close the file to be able to read it
+    }
+
     pub fn get_url_for(&self, station_name: &str) -> Option<String> {
         for s in self.data.iter() {
             if s.0.name.eq(station_name) {
@@ -148,6 +174,13 @@ impl Config {
 
         stations
     }
+}
+
+fn serialize_version<S>(version: &Version, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&version.to_string())
 }
 
 fn deserialize_version<'de, D>(deserializer: D) -> Result<Version, D::Error>

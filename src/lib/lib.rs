@@ -10,7 +10,7 @@ pub use cache::Cache;
 pub use cli_args::{Cli, Subcommands};
 pub use config::Config;
 pub use errors::{ConfigError, ConfigErrorCode};
-pub use station::Station;
+pub use station::{Station, add_station, remove_station};
 pub use version::Version;
 
 use colored::*;

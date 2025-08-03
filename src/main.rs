@@ -1,11 +1,11 @@
 use clap::Parser;
 use colored::*;
-use inquire::{InquireError, Select};
+use inquire::{InquireError, Select, Text};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
-    Cache, Cli, Config, ConfigError, Station, Subcommands, Version,
-    browser::{Browser, StationCache},
-    perror,
+    Cache, Cli, Config, ConfigError, Station, Subcommands, Version, add_station,
+    browser::{Browser, StationCache, Stations},
+    perror, remove_station,
 };
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -92,6 +92,31 @@ fn main() {
 
     let mut cached_stations = Cache::load();
     match args.command {
+        Subcommands::Add { name, url } => {
+            _ = add_station(name, url, &config);
+        }
+        Subcommands::Remove { name } => {
+            let station_name = if name.is_empty() {
+                // Show station list
+                Text::new("Choose a station to remove:")
+                    .with_autocomplete(Stations {
+                        stations: Rc::new(
+                            (&config)
+                                .data
+                                .iter()
+                                .map(|station| station.0.clone())
+                                .collect(),
+                        ),
+                    })
+                    .with_page_size(config.max_lines.unwrap_or(Text::DEFAULT_PAGE_SIZE))
+                    .prompt()
+                    .expect("Error selecting station to remove")
+            } else {
+                name
+            };
+
+            _ = remove_station(station_name, &config);
+        }
         Subcommands::Play { station, url } => {
             play(url, station, &mut cached_stations, args.show_video, config);
         }

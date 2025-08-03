@@ -8,7 +8,7 @@ pub type StationCache = Rc<Vec<ApiStation>>;
 
 #[derive(Debug, Clone)]
 pub struct Stations {
-    stations: StationCache,
+    pub stations: StationCache,
 }
 
 impl Autocomplete for Stations {

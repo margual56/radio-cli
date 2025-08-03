@@ -65,7 +65,7 @@ pub enum Subcommands {
     /// Remove a station from the config file.
     Remove {
         /// The name of the station to remove.
-        #[arg(short, long)]
+        #[arg(short, long, default_value_t = String::new())]
         name: String,
     },
     /// List all the countries in the config file.

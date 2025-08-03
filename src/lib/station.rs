@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, rc::Rc};
 
 use radiobrowser::ApiStation;
 use serde::{
@@ -6,6 +6,8 @@ use serde::{
     de::{self, MapAccess, Visitor},
     ser::SerializeStruct,
 };
+
+use crate::{Cache, Config};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Station(pub ApiStation);
@@ -132,6 +134,38 @@ impl<'de> Deserialize<'de> for Station {
         }
 
         deserializer.deserialize_map(StationVisitor)
+    }
+}
+
+pub fn add_station(name: String, url: String, config: &Config) -> Config {
+    let station = Station::new(name, url);
+    let mut new_config = config.clone();
+    new_config.data.push(station);
+
+    new_config.save();
+
+    new_config
+}
+
+pub fn remove_station(station_name: String, config: &Config) {
+    let mut new_config = config.clone();
+    let index = new_config
+        .data
+        .iter()
+        .position(|s| s.0.name == station_name);
+
+    if let Some(index) = index {
+        new_config.data.remove(index);
+        new_config.save();
+    }
+}
+
+pub fn edit_station(index: usize, name: String, url: String, config: &Config) {
+    if index < config.data.len() {
+        let mut new_config = config.clone();
+        new_config.data[index] = Station::new(name, url);
+
+        new_config.save();
     }
 }
 
