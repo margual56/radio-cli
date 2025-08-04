@@ -1,12 +1,13 @@
 use clap::Parser;
 use colored::*;
-use inquire::{InquireError, Select, Text};
+use inquire::{InquireError, Select, Text, formatter::MultiOptionFormatter};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
     Cache, Cli, Config, ConfigError, Station, Subcommands, Version, add_station,
     browser::{Browser, StationCache, Stations},
     perror, remove_station,
 };
+use radiobrowser::ApiStation;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
@@ -98,7 +99,7 @@ fn main() {
         Subcommands::Remove { name } => {
             let station_name = if name.is_empty() {
                 // Show station list
-                Text::new("Choose a station to remove:")
+                match Text::new("Choose a station to remove:")
                     .with_autocomplete(Stations {
                         stations: Rc::new(
                             (&config)
@@ -110,7 +111,17 @@ fn main() {
                     })
                     .with_page_size(config.max_lines.unwrap_or(Text::DEFAULT_PAGE_SIZE))
                     .prompt()
-                    .expect("Error selecting station to remove")
+                {
+                    Err(_) => {
+                        println!(
+                            "\n{}\n\t{}",
+                            "Operation cancelled".bold().yellow(),
+                            "Bye!".bold().green()
+                        );
+                        return;
+                    }
+                    Ok(station_name) => station_name,
+                }
             } else {
                 name
             };
@@ -289,7 +300,10 @@ pub fn prompt(
         None => Select::<Station>::DEFAULT_PAGE_SIZE,
     };
 
-    let res = Select::new(&"Select a station to play:".bold(), config.data.clone())
+    let mut stations = config.data.clone();
+    stations.push(Station::new(String::from("Other"), String::new()));
+
+    let res = Select::new(&"Select a station to play:".bold(), stations)
         .with_page_size(max_lines)
         .prompt();
 

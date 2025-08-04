@@ -75,12 +75,7 @@ impl Config {
         }
 
         let data: Config = match serde_json::from_str::<Config>(&config) {
-            Ok(mut x) => {
-                x.data
-                    .push(Station::new("Other".to_string(), "".to_string()));
-
-                x
-            }
+            Ok(x) => x,
             Err(error) => {
                 return Err(ConfigError {
                     code: ConfigErrorCode::ParseError,

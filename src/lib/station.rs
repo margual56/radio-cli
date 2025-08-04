@@ -160,14 +160,14 @@ pub fn remove_station(station_name: String, config: &Config) {
     }
 }
 
-pub fn edit_station(index: usize, name: String, url: String, config: &Config) {
-    if index < config.data.len() {
-        let mut new_config = config.clone();
-        new_config.data[index] = Station::new(name, url);
+// pub fn edit_station(index: usize, name: String, url: String, config: &Config) {
+//     if index < config.data.len() {
+//         let mut new_config = config.clone();
+//         new_config.data[index] = Station::new(name, url);
 
-        new_config.save();
-    }
-}
+//         new_config.save();
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
