@@ -2,8 +2,8 @@
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "A simple radio cli for listening to your favourite streams from the console"
 name = "radio-cli"
-version = "2.3.2"
-edition = "2021"
+version = "2.4.0"
+edition = "2024"
 homepage = "https://github.com/margual56/radio-cli"
 repository = "https://github.com/margual56/radio-cli"
 license = "GPL2"
@@ -16,13 +16,15 @@ optdepends = ["youtube-dl"]
 clap = { version = "^4", features = ["derive", "clap_derive"] }
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = { version = "^1.0", default-features = false, features = [
-    "alloc",
+	"alloc",
 ] }
-colored = "^2"
-inquire = "^0"
+colored = "^3"
 directories = "^5"
-radiobrowser = { version = "^0", features = ["blocking"] }
-clap-verbosity-flag = "^2"
+inquire = "^0"
+radiobrowser = { git = "https://gitlab.com/radiobrowser/radiobrowser-lib-rust.git", rev = "5270f8277b0ce7f2a868504fd6e047ca418411fb", features = [
+	"blocking",
+] }
+clap-verbosity-flag = "^3"
 env_logger = "^0"
 log = "^0"
 

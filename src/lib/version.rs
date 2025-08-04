@@ -1,8 +1,9 @@
 use colored::*;
-use serde::Deserialize;
+use log::error;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as ResultFmt};
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Version {
     pub major: u32,
     pub minor: u32,
@@ -12,6 +13,22 @@ pub struct Version {
 impl Display for Version {
     fn fmt(&self, f: &mut Formatter<'_>) -> ResultFmt {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        match Version::from(String::from(env!("CARGO_PKG_VERSION"))) {
+            Some(v) => v,
+            None => {
+                error!("There was an error parsing the program version");
+                Version {
+                    major: 0,
+                    minor: 0,
+                    patch: 0,
+                }
+            }
+        }
     }
 }
 
@@ -70,5 +87,9 @@ impl Version {
             minor,
             patch,
         })
+    }
+
+    pub fn to_string(&self) -> String {
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
     }
 }

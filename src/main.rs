@@ -1,10 +1,11 @@
 use clap::Parser;
 use colored::*;
-use inquire::{InquireError, Select};
+use inquire::{InquireError, Select, Text};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
-    browser::{Browser, StationCache},
-    perror, Cli, Config, ConfigError, Station, Version,
+    Cache, Cli, Config, ConfigError, Station, Subcommands, Version, add_station,
+    browser::{Browser, StationCache, Stations},
+    perror, remove_station,
 };
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -25,28 +26,16 @@ fn main() {
         .filter_level(args.verbose.log_level_filter())
         .init();
 
-    if args.list_countries {
-        if let Ok(countries) = Browser::get_countries() {
-            for country in countries {
-                println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
-            }
-        } else {
-            error!("Could not connect to the server, please check your connection.");
-        }
-
-        std::process::exit(0);
-    }
-
     // Parse the config file
-    let config_result: Result<Config, ConfigError> = match args.config {
+    let config_result: Result<Config, ConfigError> = match &args.config {
         None => Config::load_default(),
         Some(x) => Config::load_from_file(x),
     };
 
     let config = match config_result {
         Ok(mut x) => {
-            if let Some(cc) = args.country_code {
-                x.country_code = Some(cc);
+            if let Some(cc) = &args.country_code {
+                x.country_code = Some(cc.clone());
             }
 
             x
@@ -81,12 +70,12 @@ fn main() {
     );
 
     if config.config_version.major < version.major {
-        warn!("\n{} {}\n", "Warning!".yellow().bold(), 
+        warn!("\n{} {}\n", "Warning!".yellow().bold(),
 		"The config version does not match the program version.\nThis might lead to parsing errors.".italic())
     }
 
     if config.country_code.is_none() {
-        warn!("\n{} {}", "Warning!".yellow().bold(), 
+        warn!("\n{} {}", "Warning!".yellow().bold(),
 		"The config does not contain a valid country (for example, \"ES\" for Spain or \"US\" for the US).".italic());
         info!(
             "{} {} {}\n",
@@ -101,71 +90,128 @@ fn main() {
         );
     }
 
-    let mut url = args.url;
-    let mut station_arg = args.station;
-    let mut cached_stations = None;
-    loop {
-        let station = match url {
-            None => {
-                let (station, internet, updated_cached_stations) =
-                    get_station(station_arg, config.clone(), cached_stations.clone());
-                if !args.no_station_cache {
-                    cached_stations = updated_cached_stations;
+    let mut cached_stations = Cache::load();
+    match &args.command {
+        None => search_and_play(&None, (&args).clone(), &config, &mut cached_stations),
+        Some(command) => match command {
+            Subcommands::Add { name, url } => match add_station(name, url, &config) {
+                Ok(_) => {
+                    println!("Station added successfully ✅");
                 }
-
-                print!("Playing {}", station.station.green());
-                print!("\x1B]0;Now playing: {}\x07", station.station);
-
-                if internet {
-                    println!(" ({})", station.url.yellow().italic());
+                Err(e) => {
+                    error!("Error adding station: {}", e);
+                }
+            },
+            Subcommands::Remove { name } => {
+                let station_name = if name.is_empty() {
+                    // Show station list
+                    match Text::new("Choose a station to remove:")
+                        .with_autocomplete(Stations {
+                            stations: Rc::new(
+                                (&config)
+                                    .data
+                                    .iter()
+                                    .map(|station| station.0.clone())
+                                    .collect(),
+                            ),
+                        })
+                        .with_page_size(config.max_lines.unwrap_or(Text::DEFAULT_PAGE_SIZE))
+                        .prompt()
+                    {
+                        Err(_) => {
+                            println!(
+                                "\n{}\n\t{}",
+                                "Operation cancelled".bold().yellow(),
+                                "Bye!".bold().green()
+                            );
+                            std::process::exit(0);
+                        }
+                        Ok(station_name) => station_name,
+                    }
                 } else {
-                    println!();
+                    String::from(name)
+                };
+
+                _ = remove_station(station_name, &config);
+                info!("Station removed successfully ✅");
+            }
+            Subcommands::Play { station, url } => {
+                play(url, station, &mut cached_stations, args.show_video, config);
+            }
+            Subcommands::Search { name } => {
+                search_and_play(name, (&args).clone(), &config, &mut cached_stations)
+            }
+
+            Subcommands::ListCountries => {
+                if let Ok(countries) = Browser::get_countries() {
+                    for country in countries {
+                        println!("{}: \"{}\"", country.name, country.iso_3166_1.bold());
+                    }
+                } else {
+                    error!("Could not connect to the server, please check your connection.");
                 }
 
-                station
+                std::process::exit(0);
             }
+            _ => search_and_play(&None, (&args).clone(), &config, &mut cached_stations),
+        },
+    };
 
-            Some(x) => {
-                println!("Playing url '{}'", x.blue());
+    if let Err(e) = cached_stations.save() {
+        error!("{}", format!("{}", e).red());
+    }
+}
 
-                Station {
-                    station: String::from("URL"),
-                    url: x,
-                }
-            }
-        };
+fn search_and_play(
+    query: &Option<String>,
+    args: Cli,
+    config: &Rc<Config>,
+    cached_stations: &mut Cache,
+) {
+    let (station, internet, updated_cached_stations) =
+        get_station(query.clone(), config, cached_stations);
 
-        // Don't play the same station again when returning to the browser
-        url = None;
-        station_arg = None;
-
-        println!(
-            "{}",
-            "Info: press 'q' to stop playing this station"
-                .italic()
-                .bright_black()
-        );
-
-        let output_status = run_mpv(station, args.show_video);
-        if !output_status.success() {
-            perror(format!("mpv {}", output_status).as_str());
-
-            if !log_enabled!(log::Level::Info) {
-                println!(
-                    "{}: {}",
-                    "Hint".italic().bold(),
-                    "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
-                );
-            }
-
-            std::process::exit(2);
+    if !args.no_station_cache {
+        if let Some(cache) = updated_cached_stations {
+            cached_stations.insert_rc(cache);
         }
+    }
+
+    print!("Playing {}", station.0.name.green());
+    print!("\x1B]0;Now playing: {}\x07", station.0.name);
+
+    if internet {
+        println!(" ({})", station.0.url.yellow().italic());
+    } else {
+        println!();
+    }
+
+    println!(
+        "{}",
+        "Info: press 'q' to stop playing this station"
+            .italic()
+            .bright_black()
+    );
+
+    let output_status = run_mpv(station, args.show_video);
+    if !output_status.success() {
+        perror(format!("mpv {}", output_status).as_str());
+
+        if !log_enabled!(log::Level::Info) {
+            println!(
+                "{}: {}",
+                "Hint".italic().bold(),
+                "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
+            );
+        }
+
+        std::process::exit(2);
     }
 }
 
 fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
     let mut mpv = Command::new("mpv");
-    let mut mpv_args: Vec<String> = [station.url].to_vec();
+    let mut mpv_args: Vec<String> = [station.0.url].to_vec();
 
     if !show_video {
         mpv_args.push(String::from("--no-video"));
@@ -194,8 +240,8 @@ fn run_mpv(station: Station, show_video: bool) -> std::process::ExitStatus {
 
 fn get_station(
     station: Option<String>,
-    config: Rc<Config>,
-    cached_stations: Option<StationCache>,
+    config: &Rc<Config>,
+    cached_stations: &mut Cache,
 ) -> (Station, bool, Option<StationCache>) {
     let mut internet = false;
 
@@ -215,7 +261,7 @@ fn get_station(
                     internet = true;
 
                     let (brows, updated_cached_stations) =
-                        match Browser::new(config, cached_stations) {
+                        match Browser::new(config, cached_stations.get_cache()) {
                             Ok(b) => b,
                             Err(e) => {
                                 error!("Could not connect with the API");
@@ -227,7 +273,7 @@ fn get_station(
                         };
 
                     match brows.get_station(x.clone()) {
-                        Ok(s) => (s.url, Some(updated_cached_stations)),
+                        Ok(s) => (s.0.url, Some(updated_cached_stations)),
                         Err(e) => {
                             error!("This station was not found :(");
                             debug!("{}", e);
@@ -238,17 +284,13 @@ fn get_station(
                 }
             };
 
-            (
-                Station { station: x, url },
-                internet,
-                updated_cached_stations,
-            )
+            (Station::new(x, url), internet, updated_cached_stations)
         }
 
         // Otherwise
         None => {
             // And let the user choose one
-            match prompt(config, cached_stations) {
+            match prompt(config, cached_stations.get_cache()) {
                 Ok((s, b, cached)) => (s, b, cached),
                 Err(error) => {
                     println!("\n\t{}", "Bye!".bold().green());
@@ -265,7 +307,7 @@ fn get_station(
 /// Prompts the user to select a station.
 /// Returns a station and if the station was taken from the internet.
 pub fn prompt(
-    config: Rc<Config>,
+    config: &Rc<Config>,
     cached_stations: Option<StationCache>,
 ) -> Result<(Station, bool, Option<StationCache>), InquireError> {
     let max_lines: usize = match config.max_lines {
@@ -273,14 +315,17 @@ pub fn prompt(
         None => Select::<Station>::DEFAULT_PAGE_SIZE,
     };
 
-    let res = Select::new(&"Select a station to play:".bold(), config.data.clone())
+    let mut stations = config.data.clone();
+    stations.push(Station::new(String::from("Other"), String::new()));
+
+    let res = Select::new(&"Select a station to play:".bold(), stations)
         .with_page_size(max_lines)
         .prompt();
 
     let internet: bool;
     let (station, updated_cached_stations) = match res {
         Ok(s) => {
-            if s.station.eq("Other") {
+            if s.0.name.eq("Other") {
                 internet = true;
                 let result = Browser::new(config, cached_stations);
 
@@ -302,4 +347,61 @@ pub fn prompt(
     };
 
     Ok((station, internet, updated_cached_stations))
+}
+
+fn play(
+    url: &Option<String>,
+    station_name: &Option<String>,
+    cached_stations: &mut Cache,
+    show_video: bool,
+    config: Rc<Config>,
+) {
+    let station = match url {
+        Some(url) => {
+            println!("Playing url '{}'", url.blue());
+
+            Some(Station::new(String::from("URL"), url.clone()))
+        }
+        None => match station_name {
+            Some(station) => {
+                let (station_struct, _, updated_cached_stations) =
+                    get_station(Some(station.clone()), &config, cached_stations);
+                if let Some(updated_stations) = updated_cached_stations {
+                    _ = cached_stations.insert(updated_stations.to_vec());
+                }
+
+                println!("Playing {}", station_struct.0.name.blue());
+
+                Some(station_struct)
+            }
+            None => None,
+        },
+    };
+
+    if let Some(station) = station {
+        println!(
+            "{}",
+            "Info: press 'q' to stop playing this station"
+                .italic()
+                .bright_black()
+        );
+
+        let output_status = run_mpv(station, show_video);
+        if !output_status.success() {
+            perror(format!("mpv {}", output_status).as_str());
+
+            if !log_enabled!(log::Level::Info) {
+                println!(
+                    "{}: {}",
+                    "Hint".italic().bold(),
+                    "Try running radio-cli with the verbose flag (-vv or -vvv)".italic()
+                );
+            }
+
+            std::process::exit(2);
+        }
+    } else {
+        error!("URL or station not found");
+        std::process::exit(2);
+    }
 }

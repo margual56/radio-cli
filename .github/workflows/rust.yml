@@ -47,7 +47,7 @@ jobs:
       - name: Build release
         run: cargo build --release --verbose
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: stable-cargo-build
         with:
           path: |
@@ -63,7 +63,7 @@ jobs:
     needs: ['stable-build']
     steps:
       - name: Restore cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: stable-cargo-build
         with:
           path: |
@@ -109,7 +109,7 @@ jobs:
       - name: Build release
         run: cargo build --release --verbose
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: nightly-cargo-build
         with:
           path: |
@@ -125,7 +125,7 @@ jobs:
     needs: ['nightly-build']
     steps:
       - name: Restore cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: nightly-cargo-build
         with:
           path: |

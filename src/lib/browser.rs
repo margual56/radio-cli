@@ -1,15 +1,14 @@
-use std::error::Error;
 use std::rc::Rc;
 
-use crate::{station::Station, Config};
-use inquire::{error::InquireError, Autocomplete, Text};
-use radiobrowser::{blocking::RadioBrowserAPI, ApiCountry, ApiStation, StationOrder};
+use crate::{Config, station::Station};
+use inquire::{Autocomplete, Text, error::InquireError};
+use radiobrowser::{ApiCountry, ApiStation, RbError, StationOrder, blocking::RadioBrowserAPI};
 
 pub type StationCache = Rc<Vec<ApiStation>>;
 
 #[derive(Debug, Clone)]
 pub struct Stations {
-    stations: StationCache,
+    pub stations: StationCache,
 }
 
 impl Autocomplete for Stations {
@@ -48,9 +47,9 @@ pub struct Browser {
 
 impl Browser {
     pub fn new(
-        config: Rc<Config>,
+        config: &Rc<Config>,
         cached_stations: Option<StationCache>,
-    ) -> Result<(Browser, StationCache), Box<dyn Error>> {
+    ) -> Result<(Browser, StationCache), RbError> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
@@ -78,14 +77,14 @@ impl Browser {
         Ok((
             Browser {
                 api,
-                config,
+                config: config.clone(),
                 stations: stations.clone(),
             },
             stations,
         ))
     }
 
-    pub fn get_countries() -> Result<Vec<ApiCountry>, Box<dyn Error>> {
+    pub fn get_countries() -> Result<Vec<ApiCountry>, RbError> {
         let api = match RadioBrowserAPI::new() {
             Ok(r) => r,
             Err(e) => return Err(e),
@@ -98,10 +97,7 @@ impl Browser {
         if let Some(code) = self.config.country_code.clone() {
             return match self.api.get_stations().name(name).countrycode(code).send() {
                 Ok(s) => match s.get(0) {
-                    Some(x) => Ok(Station {
-                        station: x.name.clone(),
-                        url: x.url.clone(),
-                    }),
+                    Some(x) => Ok(Station::from(x.clone())),
                     None => Err(InquireError::InvalidConfiguration(
                         "Radio station does not exist".to_string(),
                     )),
@@ -111,10 +107,7 @@ impl Browser {
         } else {
             return match self.api.get_stations().name(name).send() {
                 Ok(s) => match s.get(0) {
-                    Some(x) => Ok(Station {
-                        station: x.name.clone(),
-                        url: x.url.clone(),
-                    }),
+                    Some(x) => Ok(Station::from(x.clone())),
                     None => Err(InquireError::InvalidConfiguration(
                         "Radio station does not exist".to_string(),
                     )),
@@ -124,7 +117,7 @@ impl Browser {
         }
     }
 
-    fn search_station(&self, message: &str, placeholder: &str) -> Result<String, InquireError> {
+    pub fn search_station(&self, message: &str, placeholder: &str) -> Result<String, InquireError> {
         let max_lines = match self.config.max_lines {
             Some(x) => x,
             None => Text::DEFAULT_PAGE_SIZE,
