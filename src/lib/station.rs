@@ -137,7 +137,7 @@ impl<'de> Deserialize<'de> for Station {
     }
 }
 
-pub fn add_station(name: String, url: String, config: &Config) -> Result<Config, ConfigError> {
+pub fn add_station(name: &String, url: &String, config: &Config) -> Result<Config, ConfigError> {
     if name.is_empty() || url.is_empty() {
         return Err(ConfigError {
             code: ConfigErrorCode::InvalidStation,
@@ -146,7 +146,7 @@ pub fn add_station(name: String, url: String, config: &Config) -> Result<Config,
         });
     }
 
-    if config.data.iter().any(|s| s.0.name == name) {
+    if config.data.iter().any(|s| s.0.name.eq(name)) {
         return Err(ConfigError {
             code: ConfigErrorCode::DuplicateStation,
             message: String::from("Duplicate station"),
@@ -154,7 +154,7 @@ pub fn add_station(name: String, url: String, config: &Config) -> Result<Config,
         });
     }
 
-    let station = Station::new(name, url);
+    let station = Station::new(name.clone(), url.clone());
     let mut new_config = config.clone();
     new_config.data.push(station);
 

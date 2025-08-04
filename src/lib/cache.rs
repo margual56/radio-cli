@@ -1,6 +1,5 @@
-extern crate xdg;
-
 use crate::browser::StationCache;
+use crate::get_project_dirs;
 use crate::version::Version;
 
 use radiobrowser::ApiStation;
@@ -19,8 +18,8 @@ pub struct Cache {
 
 impl Cache {
     pub fn new(stations: Vec<ApiStation>, version: Version) -> Self {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-        let cache_folder = xdg_dirs.get_cache_home().to_path_buf();
+        let xdg_dirs = get_project_dirs();
+        let cache_folder = xdg_dirs.cache_dir().to_path_buf();
 
         Cache {
             stations,
@@ -32,8 +31,8 @@ impl Cache {
 
 impl Cache {
     pub fn load() -> Self {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-        let cache_folder = xdg_dirs.get_cache_home().to_path_buf();
+        let xdg_dirs = get_project_dirs();
+        let cache_folder = xdg_dirs.cache_dir().to_path_buf();
         match File::open(&cache_folder.join("data.cache")) {
             Err(_) => {
                 return Self {

@@ -10,7 +10,7 @@ use std::path::PathBuf;
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Subcommands,
+    pub command: Option<Subcommands>,
 
     /// Flag: --show-video: If *not* present, a flag is passed down to mpv to not show the video and just play the audio.
     #[clap(

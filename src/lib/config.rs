@@ -1,7 +1,5 @@
-extern crate xdg;
-
 use crate::errors::{ConfigError, ConfigErrorCode};
-use crate::perror;
+use crate::get_project_dirs;
 use crate::station::Station;
 use crate::version::Version;
 
@@ -12,7 +10,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli/main/config.json";
+const DEFAULT_CONFIG: &str = include_str!("../../config.json");
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -34,18 +32,12 @@ pub struct Config {
 
 impl Config {
     pub fn load_default() -> Result<Config, ConfigError> {
-        // Load config.json from $XDG_CONFIG_HOME/radio-cli
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-        let config_file = Config::get_config_path(xdg_dirs);
-
-        let mut config = Config::load(config_file.clone())?;
-        config.config_path = Some(config_file);
-        Ok(config)
+        Config::load(Config::get_default_config_file())
     }
 
-    pub fn load_from_file(path: PathBuf) -> Result<Config, ConfigError> {
+    pub fn load_from_file(path: &PathBuf) -> Result<Config, ConfigError> {
         let mut config = Config::load(path.clone())?;
-        config.config_path = Some(path);
+        config.config_path = Some(path.clone());
         Ok(config)
     }
 
@@ -88,63 +80,48 @@ impl Config {
         Ok(data)
     }
 
-    /// Get the XDG path for the config file
-    /// Creates the file if it doesn't exist
-    ///
-    /// Returns the path to the config file
-    fn get_config_path(dir: xdg::BaseDirectories) -> PathBuf {
-        match dir.find_config_file("config.json") {
-            None => {
-                // Get the name of the directory
-                let tmp = dir.get_config_file("");
-                let dir_name: &str = match tmp.to_str() {
-                    Some(x) => x,
-                    None => "??",
-                };
+    fn get_default_config_file() -> PathBuf {
+        let binding = get_project_dirs();
+        let dir = binding.config_local_dir();
 
-                // Print an error message
-                let msg = format!("The config file does not exist in \"{}\"", dir_name);
-                perror(msg.as_str());
+        if !dir.exists() || !dir.join("config.json").exists() {
+            println!("The config does not exist, writing default...");
+            std::fs::create_dir_all(dir).expect("Could not create config folders");
 
-                // Download the file
-                println!("\tLoading file from {}...", _CONFIG_URL.italic());
-                let resp = reqwest::blocking::get(_CONFIG_URL).expect("Request failed");
-                let body = resp.text().expect("Body invalid");
+            // Create the new config file
+            let mut file =
+                File::create(dir.join("config.json")).expect("Could not create config file");
+            file.write_all(DEFAULT_CONFIG.as_bytes())
+                .expect("Could not write to config");
+            file.flush()
+                .expect("Error while writing to the config file");
 
-                // Create the new config file
-                let file_ref = dir
-                    .place_config_file("config.json")
-                    .expect("Could not create config file");
+            drop(file); // So we close the file to be able to read it
 
-                println!("\tDone loading!");
+            println!("\tFinished writing config.");
+            println!(
+                "\tYou can find the config at: {}",
+                format!("{:#?}", dir.as_os_str()).bold().yellow()
+            );
+            println!(
+                "\tIn it you can add your favourite stations for easy access, and other settings too such as the country to filter the stations"
+            );
+            println!("{}", "\tEnjoy! :)".bold().bright_green());
+        }
 
-                println!(
-                    "\tTrying to open {} to write the config...",
-                    file_ref.to_str().expect("msg: &str").bold()
-                );
+        let path = dir.join("config.json");
+        path
+    }
 
-                let mut file = File::create(file_ref.clone()).unwrap(); // This is write-only!!
-                file.write_all(body.as_bytes())
-                    .expect("Could not write to config");
-
-                drop(file); // So we close the file to be able to read it
-
-                println!("\tFinished writing config. Enjoy! :)\n\n");
-
-                file_ref
-            }
-            Some(x) => x,
+    fn get_config_file(&self) -> PathBuf {
+        match &self.config_path {
+            Some(p) => p.clone(),
+            None => Config::get_default_config_file(),
         }
     }
 
     pub fn save(&self) {
-        let path = match &self.config_path {
-            Some(p) => p,
-            None => {
-                let xdg_dirs = xdg::BaseDirectories::with_prefix("radio-cli").unwrap();
-                &Config::get_config_path(xdg_dirs)
-            }
-        };
+        let path = self.get_config_file();
         let mut file = File::create(path).unwrap(); // This is write-only!!
         file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
             .expect("Could not write to config");

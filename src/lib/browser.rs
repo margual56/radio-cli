@@ -47,7 +47,7 @@ pub struct Browser {
 
 impl Browser {
     pub fn new(
-        config: Rc<Config>,
+        config: &Rc<Config>,
         cached_stations: Option<StationCache>,
     ) -> Result<(Browser, StationCache), RbError> {
         let api = match RadioBrowserAPI::new() {
@@ -77,7 +77,7 @@ impl Browser {
         Ok((
             Browser {
                 api,
-                config,
+                config: config.clone(),
                 stations: stations.clone(),
             },
             stations,
@@ -125,8 +125,6 @@ impl Browser {
 
         Text::new(message)
             .with_placeholder(placeholder)
-            // Deprecated: need to change to `with_autosuggester`
-            // But for that, ApiStation needs to implement the Clone trait
             .with_autocomplete(Stations {
                 stations: self.stations.clone(),
             })

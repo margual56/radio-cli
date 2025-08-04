@@ -19,9 +19,8 @@ serde_json = { version = "^1.0", default-features = false, features = [
 	"alloc",
 ] }
 colored = "^3"
-xdg = "^2.5" # https://docs.rs/xdg/latest/xdg/struct.BaseDirectories.html
+directories = "^5"
 inquire = "^0"
-reqwest = { version = "^0", features = ["blocking", "json"] }
 radiobrowser = { git = "https://gitlab.com/radiobrowser/radiobrowser-lib-rust.git", rev = "5270f8277b0ce7f2a868504fd6e047ca418411fb", features = [
 	"blocking",
 ] }
