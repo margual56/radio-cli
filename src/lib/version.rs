@@ -88,4 +88,8 @@ impl Version {
             patch,
         })
     }
+
+    pub fn to_string(&self) -> String {
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
+    }
 }

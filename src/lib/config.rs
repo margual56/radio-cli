@@ -6,9 +6,8 @@ use crate::station::Station;
 use crate::version::Version;
 
 use colored::*;
-use serde::de::{Deserializer, Error as SeError, Visitor};
+use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
-use std::fmt::{Formatter, Result as ResultFmt};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -17,7 +16,10 @@ const _CONFIG_URL: &str = "https://raw.githubusercontent.com/margual56/radio-cli
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
-    #[serde(deserialize_with = "deserialize_version")]
+    #[serde(
+        deserialize_with = "deserialize_version",
+        serialize_with = "serialize_version"
+    )]
     pub config_version: Version,
     pub max_lines: Option<usize>,
 
@@ -187,28 +189,10 @@ fn deserialize_version<'de, D>(deserializer: D) -> Result<Version, D::Error>
 where
     D: Deserializer<'de>,
 {
-    struct JsonStringVisitor;
-
-    impl<'de> Visitor<'de> for JsonStringVisitor {
-        type Value = Version;
-
-        fn expecting(&self, formatter: &mut Formatter) -> ResultFmt {
-            formatter.write_str("a string")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: SeError,
-        {
-            // unfortunately we lose some typed information
-            // from errors deserializing the json string
-            match Version::from(String::from(v)) {
-                Some(x) => Ok(x),
-                None => Err(SeError::custom("Could not parse version")),
-            }
-        }
+    // Should be in form "major.minor.patch"
+    let version_str = String::deserialize(deserializer)?;
+    match Version::from(String::from(version_str)) {
+        Some(version) => Ok(version),
+        None => Err(serde::de::Error::custom("Error parsing version")),
     }
-
-    // use our visitor to deserialize an `ActualValue`
-    deserializer.deserialize_any(JsonStringVisitor)
 }

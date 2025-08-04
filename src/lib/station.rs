@@ -1,4 +1,4 @@
-use std::{fmt, rc::Rc};
+use std::fmt;
 
 use radiobrowser::ApiStation;
 use serde::{
@@ -7,7 +7,7 @@ use serde::{
     ser::SerializeStruct,
 };
 
-use crate::{Cache, Config};
+use crate::Config;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Station(pub ApiStation);
