@@ -7,7 +7,7 @@ use serde::{
     ser::SerializeStruct,
 };
 
-use crate::Config;
+use crate::{Config, ConfigError, ConfigErrorCode};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Station(pub ApiStation);
@@ -137,14 +137,30 @@ impl<'de> Deserialize<'de> for Station {
     }
 }
 
-pub fn add_station(name: String, url: String, config: &Config) -> Config {
+pub fn add_station(name: String, url: String, config: &Config) -> Result<Config, ConfigError> {
+    if name.is_empty() || url.is_empty() {
+        return Err(ConfigError {
+            code: ConfigErrorCode::InvalidStation,
+            message: String::from("Invalid station"),
+            extra: String::from("Station name and URL cannot be empty"),
+        });
+    }
+
+    if config.data.iter().any(|s| s.0.name == name) {
+        return Err(ConfigError {
+            code: ConfigErrorCode::DuplicateStation,
+            message: String::from("Duplicate station"),
+            extra: String::from("Station name already exists"),
+        });
+    }
+
     let station = Station::new(name, url);
     let mut new_config = config.clone();
     new_config.data.push(station);
 
     new_config.save();
 
-    new_config
+    Ok(new_config)
 }
 
 pub fn remove_station(station_name: String, config: &Config) {

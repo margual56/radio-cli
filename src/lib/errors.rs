@@ -6,6 +6,8 @@ pub enum ConfigErrorCode {
     ReadError,
     CloseError,
     ParseError,
+    InvalidStation,
+    DuplicateStation,
 }
 
 pub struct ConfigError {

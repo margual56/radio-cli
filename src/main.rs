@@ -1,13 +1,12 @@
 use clap::Parser;
 use colored::*;
-use inquire::{InquireError, Select, Text, formatter::MultiOptionFormatter};
+use inquire::{InquireError, Select, Text};
 use log::{debug, error, info, log_enabled, warn};
 use radio_libs::{
     Cache, Cli, Config, ConfigError, Station, Subcommands, Version, add_station,
     browser::{Browser, StationCache, Stations},
     perror, remove_station,
 };
-use radiobrowser::ApiStation;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
@@ -93,9 +92,14 @@ fn main() {
 
     let mut cached_stations = Cache::load();
     match args.command {
-        Subcommands::Add { name, url } => {
-            _ = add_station(name, url, &config);
-        }
+        Subcommands::Add { name, url } => match add_station(name, url, &config) {
+            Ok(_) => {
+                println!("Station added successfully ✅");
+            }
+            Err(e) => {
+                error!("Error adding station: {}", e);
+            }
+        },
         Subcommands::Remove { name } => {
             let station_name = if name.is_empty() {
                 // Show station list
@@ -127,6 +131,7 @@ fn main() {
             };
 
             _ = remove_station(station_name, &config);
+            info!("Station removed successfully ✅");
         }
         Subcommands::Play { station, url } => {
             play(url, station, &mut cached_stations, args.show_video, config);
