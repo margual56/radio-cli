@@ -41,6 +41,15 @@ _Note: radio-cli-git is now unsupported_
       ```
    - Install it through cargo: `cargo install --git https://github.com/margual56/radio-cli`
 
+- Get binary from release
+  ```bash
+     wget https://github.com/margual56/radio-cli/releases/download/v2.3.2/radio-cli
+     # change permition to run bin
+     chmod +x ./radio-cli
+     # run bin
+     ./radio-cli
+  ``` 
+
 ## How it works...
 ...is very simple. The idea is to have a compilation of radio stations in [the config file](https://github.com/margual56/radio-cli/blob/main/config.json) and have a tool to be able to easily select one or the other.
 
