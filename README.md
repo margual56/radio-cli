@@ -41,10 +41,6 @@ _Note: radio-cli-git is now unsupported_
       ```
    - Install it through cargo: `cargo install --git https://github.com/margual56/radio-cli`
 
-- On debian is require install mpv
-  ```bash
-      apt install mpv
-  ```
 - Get binary from release
   ```bash
      wget https://github.com/margual56/radio-cli/releases/download/v2.3.2/radio-cli
